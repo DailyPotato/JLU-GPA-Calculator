@@ -15,7 +15,8 @@ test('manual course workflow calculates, switches result views, exports and pers
   await expect(summaries).toHaveCount(3);
   await expect(summaries.nth(0)).toContainText('保研 GPA');
   await expect(summaries.nth(1)).toContainText('加权平均分');
-  await expect(summaries.nth(2)).toContainText('不加权平均分');
+  await expect(summaries.nth(2)).toContainText('算术平均分');
+  await expect(page.getByRole('button', { name: /排除规则/ })).toHaveCount(3);
 
   await page
     .getByRole('button', { name: /添加课程/ })
@@ -41,7 +42,7 @@ test('manual course workflow calculates, switches result views, exports and pers
   await expect(page.getByRole('button', { name: '保研 GPA 4.0000', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '加权平均分 90.0000', exact: true })).toBeVisible();
   await expect(
-    page.getByRole('button', { name: '不加权平均分 90.0000', exact: true })
+    page.getByRole('button', { name: '算术平均分 90.0000', exact: true })
   ).toBeVisible();
 
   await page.getByRole('button', { name: '加权平均分 90.0000', exact: true }).click();
@@ -66,7 +67,7 @@ test('manual course workflow calculates, switches result views, exports and pers
   await expect(page.locator('.result-summary')).toContainText([
     '保研 GPA尚未计算',
     '加权平均分尚未计算',
-    '不加权平均分尚未计算'
+    '算术平均分尚未计算'
   ]);
 
   await page
@@ -92,9 +93,59 @@ test('manual course workflow calculates, switches result views, exports and pers
   await expect(page.locator('.result-summary')).toContainText([
     '保研 GPA尚未计算',
     '加权平均分尚未计算',
-    '不加权平均分尚未计算'
+    '算术平均分尚未计算'
   ]);
   await expect(page.getByRole('button', { name: /清空课程/ })).toBeDisabled();
+});
+
+test('configures independent result exclusions and synchronizes them to one result', async ({
+  page
+}) => {
+  await page.goto('./');
+  await page.getByRole('button', { name: '导入成绩', exact: true }).click();
+  const chooserPromise = page.waitForEvent('filechooser');
+  await page.getByText('点击或拖入成绩表').click();
+  const chooser = await chooserPromise;
+  await chooser.setFiles({
+    name: '排除规则测试.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(
+      '课程号,课程名,总成绩,学分\nKEEP-001,保留课程,90,2\nDROP-001,自动排除课程,80,2',
+      'utf8'
+    )
+  });
+  await page.getByRole('button', { name: '确认导入' }).click();
+
+  await page.getByRole('button', { name: '加权平均分排除规则', exact: true }).click();
+  const drawer = page.getByRole('dialog', { name: '加权平均分 · 排除规则' });
+  await expect(drawer).toBeVisible();
+  await expect(drawer.getByText(/所有条件均为空时，不会额外排除课程/)).toBeVisible();
+  await expect(drawer.getByRole('button', { name: '同步应用于保研 GPA计算' })).toBeVisible();
+  await expect(drawer.getByRole('button', { name: '同步应用于算术平均分计算' })).toBeVisible();
+
+  const keywordInput = drawer.getByRole('combobox', { name: '关键词排除' });
+  await keywordInput.fill('排除');
+  await keywordInput.press('Enter');
+  await keywordInput.fill('待删除');
+  await keywordInput.press('Enter');
+  const removableKeyword = drawer.locator('.ant-select-selection-item').filter({
+    hasText: '待删除'
+  });
+  await removableKeyword.locator('.ant-select-selection-item-remove').click();
+
+  const codeInput = drawer.getByRole('combobox', { name: '课程编号排除' });
+  await codeInput.fill('ignore-999');
+  await codeInput.press('Enter');
+  await drawer.getByRole('button', { name: '同步应用于算术平均分计算' }).click();
+  await expect(page.getByText('排除规则已保存并同步')).toBeVisible();
+  await drawer.getByRole('button', { name: '取消' }).click();
+
+  await page.getByRole('button', { name: /开始计算/ }).click();
+  await expect(page.getByRole('button', { name: '保研 GPA 3.5000', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '加权平均分 90.0000', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '算术平均分 90.0000', exact: true })
+  ).toBeVisible();
 });
 
 test('imports a synthetic CSV through the right-side preview drawer', async ({ page }) => {
@@ -144,6 +195,7 @@ test('uses an icon rail and keeps horizontal scrolling inside the course table a
   expect(layout.tableScrollWidth).toBeGreaterThan(layout.tableClientWidth ?? 0);
 
   await page.getByRole('button', { name: '计算规则', exact: true }).click();
+  await expect(page.getByText('保研课程排除规则')).toHaveCount(0);
   const drawerWidth = await page
     .getByRole('dialog', { name: '计算规则设置' })
     .evaluate((element) => element.getBoundingClientRect().width);

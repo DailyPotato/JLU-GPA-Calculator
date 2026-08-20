@@ -20,7 +20,7 @@ export function ExportDrawer({ open, results, calculated, exporting, onClose, on
   const items = [
     { label: '保研 GPA', result: results.recommendationGpa },
     { label: '加权平均分', result: results.weightedAverage },
-    { label: '不加权平均分', result: results.arithmeticAverage }
+    { label: '算术平均分', result: results.arithmeticAverage }
   ];
 
   return (

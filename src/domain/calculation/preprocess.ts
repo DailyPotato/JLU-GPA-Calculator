@@ -6,6 +6,7 @@ import {
   resolveGradePoint
 } from '../course/course.normalizer';
 import type { AppRuleSet } from '../rules/rule-set.types';
+import { getResultExclusionRule } from '../rules/result-exclusion.rules';
 import { resolveDuplicateCourses } from './duplicate-resolver';
 
 const exclusionMessages: Record<ExclusionCode, string> = {
@@ -14,8 +15,9 @@ const exclusionMessages: Record<ExclusionCode, string> = {
   'missing-credit': '学分缺失或无效',
   'user-excluded': '用户手动排除',
   'duplicate-history': '同课程号的非最高成绩',
-  'elective-course': '课程属性命中保研选修课排除规则',
-  'recommendation-excluded-course': '课程命中保研排除清单',
+  'result-course-type-excluded': '课程类型命中当前计算的排除规则',
+  'result-keyword-excluded': '课程名称命中当前计算的关键词排除规则',
+  'result-course-code-excluded': '课程编号命中当前计算的排除规则',
   'manual-recommendation-exclude': '用户手动排除出保研课程'
 };
 
@@ -25,31 +27,37 @@ function addExclusion(evaluation: CourseEvaluation, code: ExclusionCode): void {
   evaluation.exclusionMessages.push(exclusionMessages[code]);
 }
 
-function isRecommendationRuleExcluded(
+function getResultRuleExclusion(
   course: Course,
+  resultKind: ResultKind,
   rules: AppRuleSet
 ): ExclusionCode | undefined {
-  const recommendation = rules.recommendation;
+  const exclusionRule = getResultExclusionRule(rules, resultKind);
   const attributeValues = [
     course.attributes.courseNature,
     course.attributes.courseCategory,
     course.attributes.publicElectiveCategory
-  ].map(normalizeText);
-  if (
-    recommendation.electiveNatureExactValues
-      .map(normalizeText)
-      .some((value) => value && attributeValues.includes(value))
-  ) {
-    return 'elective-course';
+  ]
+    .map(normalizeText)
+    .filter(Boolean);
+  const publicElectiveCategory = normalizeText(course.attributes.publicElectiveCategory);
+  const matchesCourseType =
+    exclusionRule.courseType === 'elective'
+      ? Boolean(publicElectiveCategory) || attributeValues.some((value) => value.includes('选修'))
+      : exclusionRule.courseType === 'required'
+        ? attributeValues.some((value) => value.includes('必修'))
+        : false;
+  if (matchesCourseType) {
+    return 'result-course-type-excluded';
   }
 
   const code = normalizeCourseCode(course.identity.code);
   const name = normalizeText(course.identity.name);
-  if (
-    recommendation.excludedCourseCodes.map(normalizeCourseCode).includes(code) ||
-    recommendation.excludedCourseNames.map(normalizeText).includes(name)
-  ) {
-    return 'recommendation-excluded-course';
+  if (exclusionRule.keywords.some((keyword) => name.includes(normalizeText(keyword)))) {
+    return 'result-keyword-excluded';
+  }
+  if (exclusionRule.courseCodes.map(normalizeCourseCode).includes(code)) {
+    return 'result-course-code-excluded';
   }
   return undefined;
 }
@@ -102,13 +110,19 @@ export function evaluateCourses(
 
   for (const course of courses) {
     const evaluation = baseEvaluations.get(course.id)!;
-    if (resultKind === 'recommendation-gpa' && evaluation.exclusionCodes.length === 0) {
-      if (course.control.recommendationOverride === 'exclude') {
-        addExclusion(evaluation, 'manual-recommendation-exclude');
-      } else if (course.control.recommendationOverride === 'auto') {
-        const ruleExclusion = isRecommendationRuleExcluded(course, rules);
-        if (ruleExclusion) addExclusion(evaluation, ruleExclusion);
-      }
+    if (
+      resultKind === 'recommendation-gpa' &&
+      course.control.recommendationOverride === 'exclude' &&
+      evaluation.exclusionCodes.length === 0
+    ) {
+      addExclusion(evaluation, 'manual-recommendation-exclude');
+    }
+
+    const manuallyIncludedForRecommendation =
+      resultKind === 'recommendation-gpa' && course.control.recommendationOverride === 'include';
+    if (evaluation.exclusionCodes.length === 0 && !manuallyIncludedForRecommendation) {
+      const ruleExclusion = getResultRuleExclusion(course, resultKind, rules);
+      if (ruleExclusion) addExclusion(evaluation, ruleExclusion);
     }
 
     evaluation.included = evaluation.exclusionCodes.length === 0;

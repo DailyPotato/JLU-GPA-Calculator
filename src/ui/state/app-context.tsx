@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer 
 import { calculateAllResults } from '../../domain/calculation/calculate';
 import type { CalculationResult, Course, ResultKind } from '../../domain/course/course.types';
 import { defaultRuleSet } from '../../domain/rules/recommendation.rules';
+import { normalizeAppRuleSet } from '../../domain/rules/result-exclusion.rules';
 import type { AppRuleSet } from '../../domain/rules/rule-set.types';
 import { commitCourseImport } from '../../application/import-courses';
 import type { ImportMergeMode, MergeResult } from '../../infrastructure/importers/import.types';
@@ -86,7 +87,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           dispatch({
             type: 'HYDRATE',
             courses,
-            rules: savedRules ?? structuredClone(defaultRuleSet)
+            rules: normalizeAppRuleSet(savedRules ?? structuredClone(defaultRuleSet))
           });
       })
       .catch((error: unknown) => {
@@ -160,9 +161,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const saveRules = useCallback(
     async (rules: AppRuleSet) =>
       withPersistenceError(async () => {
-        await database.saveRuleSet(rules);
-        await database.saveSetting('active-rule-set', rules);
-        dispatch({ type: 'SET_RULES', rules });
+        const normalizedRules = normalizeAppRuleSet(rules);
+        await database.saveRuleSet(normalizedRules);
+        await database.saveSetting('active-rule-set', normalizedRules);
+        dispatch({ type: 'SET_RULES', rules: normalizedRules });
       }),
     [withPersistenceError]
   );

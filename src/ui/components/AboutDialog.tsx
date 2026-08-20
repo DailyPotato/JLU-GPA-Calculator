@@ -11,7 +11,7 @@ export function AboutDialog({ open, rules, onClose }: Props) {
   return (
     <Modal open={open} title="关于 JLU GPA" footer={null} width={560} onCancel={onClose}>
       <Typography.Paragraph>
-        面向吉林大学本科生的本地成绩核算工具，可计算保研 GPA、加权平均分和不加权平均分。
+        面向吉林大学本科生的本地成绩核算工具，可计算保研 GPA、加权平均分和算术平均分。
       </Typography.Paragraph>
       <Descriptions column={1} size="small" bordered>
         <Descriptions.Item label="当前规则">{rules.name}</Descriptions.Item>

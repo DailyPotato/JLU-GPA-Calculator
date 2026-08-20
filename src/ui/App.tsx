@@ -10,6 +10,10 @@ import { CourseWorkspace } from './components/CourseWorkspace';
 import { ExportDrawer } from './components/ExportDrawer';
 import { ImportDrawer } from './components/ImportDialog';
 import { ResultExportCard } from './components/ResultExportCard';
+import {
+  ResultExclusionDrawer,
+  type ExclusionRuleUpdates
+} from './components/ResultExclusionDrawer';
 import { RulesDrawer } from './components/SettingsDialog';
 import { Sidebar, type PanelKind } from './components/Sidebar';
 import { AppProvider, useAppState } from './state/app-context';
@@ -33,6 +37,7 @@ function Workbench() {
     saveRules
   } = useAppState();
   const [activePanel, setActivePanel] = useState<PanelKind>();
+  const [exclusionKind, setExclusionKind] = useState<ResultKind>();
   const [aboutOpen, setAboutOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course>();
@@ -133,19 +138,30 @@ function Workbench() {
       sidebar={
         <Sidebar
           activePanel={activePanel}
+          activeExclusionKind={exclusionKind}
           selectedResultKind={selectedResultKind}
           hasCalculated={hasCalculated}
           courseCount={courses.length}
           results={results}
+          exclusions={rules.exclusions}
           onCourses={() => {
             setActivePanel(undefined);
+            setExclusionKind(undefined);
             selectResultKind(undefined);
           }}
-          onPanel={setActivePanel}
+          onPanel={(panel) => {
+            setExclusionKind(undefined);
+            setActivePanel(panel);
+          }}
           onCalculate={startCalculation}
           onResult={(kind: ResultKind) => {
             setActivePanel(undefined);
+            setExclusionKind(undefined);
             selectResultKind(kind);
+          }}
+          onExclusionRules={(kind) => {
+            setActivePanel(undefined);
+            setExclusionKind(kind);
           }}
           onAbout={() => setAboutOpen(true)}
         />
@@ -204,6 +220,23 @@ function Workbench() {
           exporting={exporting}
           onClose={() => setActivePanel(undefined)}
           onExport={exportResult}
+        />
+      )}
+      {exclusionKind && (
+        <ResultExclusionDrawer
+          key={exclusionKind}
+          open
+          kind={exclusionKind}
+          rule={rules.exclusions[exclusionKind]}
+          onClose={() => setExclusionKind(undefined)}
+          onSave={async (updates: ExclusionRuleUpdates) => {
+            await saveRules({
+              ...rules,
+              exclusions: { ...rules.exclusions, ...updates }
+            });
+            const targets = Object.keys(updates) as ResultKind[];
+            app.message.success(targets.length > 1 ? '排除规则已保存并同步' : '排除规则已保存');
+          }}
         />
       )}
       <CourseDrawer

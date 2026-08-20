@@ -3,7 +3,7 @@ import type { CalculationResult, ResultKind } from '../../domain/course/course.t
 const labels: Record<ResultKind, string> = {
   'recommendation-gpa': '保研 GPA',
   'weighted-average': '加权平均分',
-  'arithmetic-average': '不加权平均分'
+  'arithmetic-average': '算术平均分'
 };
 
 interface Props {

@@ -71,8 +71,9 @@ export type ExclusionCode =
   | 'missing-credit'
   | 'user-excluded'
   | 'duplicate-history'
-  | 'elective-course'
-  | 'recommendation-excluded-course'
+  | 'result-course-type-excluded'
+  | 'result-keyword-excluded'
+  | 'result-course-code-excluded'
   | 'manual-recommendation-exclude';
 
 export interface CourseEvaluation {

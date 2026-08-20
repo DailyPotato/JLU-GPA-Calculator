@@ -9,7 +9,7 @@ import { CourseLedger, type CourseLedgerRow } from './CourseLedger';
 const viewTitles: Record<ResultKind, string> = {
   'recommendation-gpa': '保研 GPA 课程',
   'weighted-average': '加权平均分课程',
-  'arithmetic-average': '不加权平均分课程'
+  'arithmetic-average': '算术平均分课程'
 };
 
 interface Props {

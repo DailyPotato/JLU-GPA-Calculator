@@ -1,15 +1,4 @@
-import {
-  Alert,
-  Button,
-  Divider,
-  Drawer,
-  Input,
-  InputNumber,
-  Radio,
-  Space,
-  Table,
-  Typography
-} from 'antd';
+import { Alert, Button, Divider, Drawer, InputNumber, Radio, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 import type { LevelGrade } from '../../domain/course/course.types';
 import type { AppRuleSet, GradePointBand } from '../../domain/rules/rule-set.types';
@@ -22,13 +11,6 @@ interface Props {
 }
 
 const levels: LevelGrade[] = ['优秀', '良好', '中等', '及格', '不及格'];
-
-function csv(value: string): string[] {
-  return value
-    .split(/[，,\n]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
 
 function validateBands(bands: GradePointBand[]): GradePointBand[] {
   const sorted = [...bands].sort((a, b) => a.minInclusive - b.minInclusive);
@@ -73,13 +55,7 @@ export function RulesDrawer({ open, rules, onCancel, onSave }: Props) {
         id: 'user-custom-rule-set',
         name: '用户自定义规则',
         version: `custom-${new Date().toISOString().slice(0, 10)}`,
-        gradePoint: { ...draft.gradePoint, bands },
-        recommendation: {
-          ...draft.recommendation,
-          id: 'user-custom-recommendation-rules',
-          name: '用户自定义保研课程规则',
-          verificationStatus: 'unverified'
-        }
+        gradePoint: { ...draft.gradePoint, bands }
       };
       await onSave(next);
       onCancel();
@@ -239,64 +215,7 @@ export function RulesDrawer({ open, rules, onCancel, onSave }: Props) {
             ]}
           />
         </div>
-        <Divider />
-        <div>
-          <Typography.Title level={4}>保研课程排除规则</Typography.Title>
-          <Typography.Paragraph type="secondary">
-            只影响保研 GPA，不影响两种均分。均为规范化后的精确匹配，不做模糊匹配。
-          </Typography.Paragraph>
-          <Space orientation="vertical" className="full-width">
-            <label>
-              排除的课程性质/类别值（逗号或换行分隔）
-              <Input.TextArea
-                rows={2}
-                value={draft.recommendation.electiveNatureExactValues.join('\n')}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    recommendation: {
-                      ...draft.recommendation,
-                      electiveNatureExactValues: csv(event.target.value)
-                    }
-                  })
-                }
-              />
-            </label>
-            <label>
-              排除的课程号（逗号或换行分隔）
-              <Input.TextArea
-                rows={2}
-                value={draft.recommendation.excludedCourseCodes.join('\n')}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    recommendation: {
-                      ...draft.recommendation,
-                      excludedCourseCodes: csv(event.target.value)
-                    }
-                  })
-                }
-              />
-            </label>
-            <label>
-              排除的课程名（逗号或换行分隔）
-              <Input.TextArea
-                rows={2}
-                value={draft.recommendation.excludedCourseNames.join('\n')}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    recommendation: {
-                      ...draft.recommendation,
-                      excludedCourseNames: csv(event.target.value)
-                    }
-                  })
-                }
-              />
-            </label>
-          </Space>
-        </div>
-        {error && <Alert type="error" showIcon message={error} />}
+        {error && <Alert type="error" showIcon title={error} />}
       </Space>
     </Drawer>
   );

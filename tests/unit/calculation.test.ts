@@ -43,12 +43,16 @@ describe('calculation pipeline', () => {
     expect(result.value).toBeUndefined();
   });
 
-  it('does not apply recommendation exclusions to normal averages', () => {
+  it('applies course-code exclusions only to their configured result', () => {
     const rules: AppRuleSet = {
       ...defaultRuleSet,
-      recommendation: {
-        ...defaultRuleSet.recommendation,
-        excludedCourseCodes: ['EXCLUDED']
+      exclusions: {
+        ...defaultRuleSet.exclusions,
+        'recommendation-gpa': {
+          courseType: 'none',
+          keywords: [],
+          courseCodes: ['EXCLUDED']
+        }
       }
     };
     const course = makeCourse('1', 88, 2, {
@@ -57,6 +61,68 @@ describe('calculation pipeline', () => {
     expect(calculateResult([course], 'recommendation-gpa', rules).status).toBe('empty');
     expect(calculateResult([course], 'weighted-average', rules).formattedValue).toBe('88.0000');
     expect(calculateResult([course], 'arithmetic-average', rules).formattedValue).toBe('88.0000');
+  });
+
+  it('supports independent keyword exclusions and ignores empty entries', () => {
+    const rules: AppRuleSet = {
+      ...defaultRuleSet,
+      exclusions: {
+        ...defaultRuleSet.exclusions,
+        'weighted-average': {
+          courseType: 'none',
+          keywords: [' 英语 ', '', '   '],
+          courseCodes: []
+        }
+      }
+    };
+    const english = makeCourse('1', 88, 2, {
+      identity: { code: 'ENGLISH-001', name: '大学英语 A' }
+    });
+    const math = makeCourse('2', 92, 2, {
+      identity: { code: 'MATH-001', name: '高等数学' }
+    });
+
+    const weighted = calculateResult([english, math], 'weighted-average', rules);
+    const arithmetic = calculateResult([english, math], 'arithmetic-average', rules);
+    expect(weighted).toMatchObject({ formattedValue: '92.0000', includedCourseIds: ['2'] });
+    expect(weighted.evaluations[0].exclusionCodes).toContain('result-keyword-excluded');
+    expect(arithmetic).toMatchObject({ formattedValue: '90.0000', courseCount: 2 });
+  });
+
+  it.each([
+    ['elective', { courseNature: '专业选修课' }],
+    ['required', { courseCategory: '学科必修' }]
+  ] as const)('excludes %s course types using course attributes', (courseType, attributes) => {
+    const rules: AppRuleSet = {
+      ...defaultRuleSet,
+      exclusions: {
+        ...defaultRuleSet.exclusions,
+        'arithmetic-average': { courseType, keywords: [], courseCodes: [] }
+      }
+    };
+    const course = makeCourse('1', 90, 2, { attributes });
+    const result = calculateResult([course], 'arithmetic-average', rules);
+    expect(result.status).toBe('empty');
+    expect(result.evaluations[0].exclusionCodes).toContain('result-course-type-excluded');
+  });
+
+  it('lets a manual recommendation inclusion override automatic recommendation exclusions', () => {
+    const rules: AppRuleSet = {
+      ...defaultRuleSet,
+      exclusions: {
+        ...defaultRuleSet.exclusions,
+        'recommendation-gpa': {
+          courseType: 'none',
+          keywords: ['测试'],
+          courseCodes: []
+        }
+      }
+    };
+    const course = makeCourse('1', 90, 2, {
+      identity: { code: 'TEST-001', name: '测试课程' },
+      control: { userIncluded: true, recommendationOverride: 'include' }
+    });
+    expect(calculateResult([course], 'recommendation-gpa', rules).status).toBe('success');
   });
 
   it('treats zero as a valid score', () => {
