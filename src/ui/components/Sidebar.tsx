@@ -3,11 +3,13 @@ import {
   CalculatorOutlined,
   ExportOutlined,
   FileAddOutlined,
+  FilterOutlined,
   InfoCircleOutlined,
   SettingOutlined
 } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import type { ResultKind } from '../../domain/course/course.types';
+import type { AppRuleSet } from '../../domain/rules/rule-set.types';
 import type { AllResults } from '../state/app-context';
 import { ResultSummary } from './ResultSummary';
 
@@ -15,14 +17,17 @@ export type PanelKind = 'import' | 'rules' | 'export';
 
 interface Props {
   activePanel?: PanelKind;
+  activeExclusionKind?: ResultKind;
   selectedResultKind?: ResultKind;
   hasCalculated: boolean;
   courseCount: number;
   results: AllResults;
+  exclusions: AppRuleSet['exclusions'];
   onCourses: () => void;
   onPanel: (panel: PanelKind) => void;
   onCalculate: () => void;
   onResult: (kind: ResultKind) => void;
+  onExclusionRules: (kind: ResultKind) => void;
   onAbout: () => void;
 }
 
@@ -35,14 +40,17 @@ const navItems = [
 
 export function Sidebar({
   activePanel,
+  activeExclusionKind,
   selectedResultKind,
   hasCalculated,
   courseCount,
   results,
+  exclusions,
   onCourses,
   onPanel,
   onCalculate,
   onResult,
+  onExclusionRules,
   onAbout
 }: Props) {
   const resultItems = [
@@ -60,7 +68,10 @@ export function Sidebar({
 
       <nav className="sidebar-nav" aria-label="主要功能">
         {navItems.map((item) => {
-          const active = item.key === 'courses' ? !activePanel : activePanel === item.key;
+          const active =
+            item.key === 'courses'
+              ? !activePanel && !activeExclusionKind
+              : activePanel === item.key;
           const action = item.key === 'courses' ? onCourses : () => onPanel(item.key);
           return (
             <Tooltip key={item.key} title={item.label} placement="right">
@@ -95,15 +106,39 @@ export function Sidebar({
 
       <section className="sidebar-results" aria-label="计算结果">
         <h2>计算结果</h2>
-        {resultItems.map((result) => (
-          <ResultSummary
-            key={result.kind}
-            result={result}
-            active={selectedResultKind === result.kind}
-            calculated={hasCalculated}
-            onSelect={() => onResult(result.kind)}
-          />
-        ))}
+        {resultItems.map((result) => {
+          const rule = exclusions[result.kind];
+          const configured =
+            rule.courseType !== 'none' || rule.keywords.length > 0 || rule.courseCodes.length > 0;
+          return (
+            <div
+              key={result.kind}
+              className={`result-module${selectedResultKind === result.kind ? ' result-module-result-active' : ''}${activeExclusionKind === result.kind ? ' result-module-rules-active' : ''}`}
+            >
+              <ResultSummary
+                result={result}
+                active={selectedResultKind === result.kind}
+                calculated={hasCalculated}
+                onSelect={() => onResult(result.kind)}
+              />
+              <Tooltip
+                title={`${result.kind === 'recommendation-gpa' ? '保研 GPA' : result.kind === 'weighted-average' ? '加权平均分' : '算术平均分'}排除规则`}
+                placement="right"
+              >
+                <button
+                  type="button"
+                  className="result-rule-button"
+                  aria-label={`${result.kind === 'recommendation-gpa' ? '保研 GPA' : result.kind === 'weighted-average' ? '加权平均分' : '算术平均分'}排除规则`}
+                  onClick={() => onExclusionRules(result.kind)}
+                >
+                  <FilterOutlined />
+                  <span className="result-rule-label">排除规则</span>
+                  {configured && <span className="result-rule-configured" aria-label="已配置" />}
+                </button>
+              </Tooltip>
+            </div>
+          );
+        })}
       </section>
 
       <div className="sidebar-footer">

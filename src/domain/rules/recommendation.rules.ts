@@ -1,5 +1,6 @@
 import type { AppRuleSet } from './rule-set.types';
 import { projectGradePointPreset } from './grade-point.rules';
+import { createDefaultResultExclusions } from './result-exclusion.rules';
 
 export const defaultRuleSet: AppRuleSet = {
   id: 'jlu-project-preset-unverified',
@@ -11,9 +12,7 @@ export const defaultRuleSet: AppRuleSet = {
     name: '保研课程规则（待负责人核验）',
     version: '2026.08-unverified',
     applicableFrom: '2026-08-20',
-    verificationStatus: 'unverified',
-    electiveNatureExactValues: [],
-    excludedCourseCodes: [],
-    excludedCourseNames: []
-  }
+    verificationStatus: 'unverified'
+  },
+  exclusions: createDefaultResultExclusions()
 };

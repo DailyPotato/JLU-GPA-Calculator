@@ -1,4 +1,4 @@
-import type { LevelGrade } from '../course/course.types';
+import type { LevelGrade, ResultKind } from '../course/course.types';
 
 export interface GradePointBand {
   minInclusive: number;
@@ -24,9 +24,18 @@ export interface RecommendationRuleSet {
   sourceTitle?: string;
   sourceUrl?: string;
   verifiedAt?: string;
-  electiveNatureExactValues: string[];
-  excludedCourseCodes: string[];
-  excludedCourseNames: string[];
+  /** Legacy fields retained so previously saved browser settings can be migrated. */
+  electiveNatureExactValues?: string[];
+  excludedCourseCodes?: string[];
+  excludedCourseNames?: string[];
+}
+
+export type CourseTypeExclusion = 'none' | 'elective' | 'required';
+
+export interface ResultExclusionRuleSet {
+  courseType: CourseTypeExclusion;
+  keywords: string[];
+  courseCodes: string[];
 }
 
 export interface AppRuleSet {
@@ -35,4 +44,5 @@ export interface AppRuleSet {
   version: string;
   gradePoint: GradePointRuleSet;
   recommendation: RecommendationRuleSet;
+  exclusions: Record<ResultKind, ResultExclusionRuleSet>;
 }

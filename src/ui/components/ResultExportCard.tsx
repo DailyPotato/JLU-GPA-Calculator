@@ -36,7 +36,7 @@ export const ResultExportCard = forwardRef<HTMLDivElement, Props>(function Resul
           <small>{results.weightedAverage.courseCount} 门课程</small>
         </div>
         <div>
-          <span>不加权平均分</span>
+          <span>算术平均分</span>
           <strong>{value(results.arithmeticAverage)}</strong>
           <small>{results.arithmeticAverage.courseCount} 门课程</small>
         </div>
