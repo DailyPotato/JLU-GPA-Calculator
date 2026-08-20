@@ -1,0 +1,232 @@
+import { App as AntApp, ConfigProvider, theme } from 'antd';
+import zhCN from 'antd/locale/zh_CN';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Course, ResultKind } from '../domain/course/course.types';
+import { exportResultPdf, exportResultPng } from '../infrastructure/exporters/result-exporter';
+import { AboutDialog } from './components/AboutDialog';
+import { AppShell } from './components/AppShell';
+import { CourseDrawer } from './components/CourseDrawer';
+import { CourseWorkspace } from './components/CourseWorkspace';
+import { ExportDrawer } from './components/ExportDrawer';
+import { ImportDrawer } from './components/ImportDialog';
+import { ResultExportCard } from './components/ResultExportCard';
+import { RulesDrawer } from './components/SettingsDialog';
+import { Sidebar, type PanelKind } from './components/Sidebar';
+import { AppProvider, useAppState } from './state/app-context';
+
+function Workbench() {
+  const app = AntApp.useApp();
+  const {
+    courses,
+    rules,
+    ready,
+    hasCalculated,
+    selectedResultKind,
+    persistenceError,
+    results,
+    startCalculation,
+    selectResultKind,
+    saveCourse,
+    deleteCourse,
+    importCourses,
+    saveRules
+  } = useAppState();
+  const [activePanel, setActivePanel] = useState<PanelKind>();
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course>();
+  const [exporting, setExporting] = useState(false);
+  const [generatedAt, setGeneratedAt] = useState(() => new Date());
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (persistenceError) app.message.error(persistenceError);
+  }, [app.message, persistenceError]);
+
+  const resultByKind = useMemo(
+    () => ({
+      'recommendation-gpa': results.recommendationGpa,
+      'weighted-average': results.weightedAverage,
+      'arithmetic-average': results.arithmeticAverage
+    }),
+    [results]
+  );
+
+  const selectedResult = selectedResultKind ? resultByKind[selectedResultKind] : undefined;
+
+  const edit = (course?: Course) => {
+    setActivePanel(undefined);
+    setEditingCourse(course);
+    setEditorOpen(true);
+  };
+
+  const exportResult = async (format: 'png' | 'pdf') => {
+    if (!exportRef.current) return;
+    setExporting(true);
+    setGeneratedAt(new Date());
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    );
+    try {
+      if (format === 'png') await exportResultPng(exportRef.current);
+      else await exportResultPdf(exportRef.current);
+      app.message.success(`已导出 ${format.toUpperCase()}`);
+    } catch (error) {
+      app.message.error(error instanceof Error ? error.message : '导出失败');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const recommendationIncluded = editingCourse
+    ? editingCourse.control.recommendationOverride === 'include'
+      ? true
+      : editingCourse.control.recommendationOverride === 'exclude'
+        ? false
+        : (results.recommendationGpa.evaluations.find(
+            (evaluation) => evaluation.courseId === editingCourse.id
+          )?.included ?? true)
+    : true;
+
+  const setRecommendation = async (course: Course, included: boolean) => {
+    try {
+      await saveCourse({
+        ...course,
+        control: {
+          ...course.control,
+          recommendationOverride: included ? 'include' : 'exclude'
+        },
+        audit: { ...course.audit, updatedAt: new Date().toISOString() }
+      });
+    } catch {
+      app.message.error('保研课程设置保存失败');
+    }
+  };
+
+  return (
+    <AppShell
+      sidebar={
+        <Sidebar
+          activePanel={activePanel}
+          selectedResultKind={selectedResultKind}
+          hasCalculated={hasCalculated}
+          courseCount={courses.length}
+          results={results}
+          onCourses={() => {
+            setActivePanel(undefined);
+            selectResultKind(undefined);
+          }}
+          onPanel={setActivePanel}
+          onCalculate={startCalculation}
+          onResult={(kind: ResultKind) => {
+            setActivePanel(undefined);
+            selectResultKind(kind);
+          }}
+          onAbout={() => setAboutOpen(true)}
+        />
+      }
+    >
+      <CourseWorkspace
+        courses={courses}
+        rules={rules}
+        ready={ready}
+        selectedResultKind={selectedResultKind}
+        selectedResult={selectedResult}
+        recommendationResult={results.recommendationGpa}
+        onAdd={() => edit()}
+        onEdit={edit}
+        onDelete={async (course) => {
+          try {
+            await deleteCourse(course.id);
+            app.message.success('课程已删除');
+          } catch {
+            app.message.error('课程删除失败');
+          }
+        }}
+        onRecommendationChange={setRecommendation}
+      />
+
+      {activePanel === 'import' && (
+        <ImportDrawer
+          open
+          existingCourses={courses}
+          onCancel={() => setActivePanel(undefined)}
+          onCommit={async (incoming, mode) => {
+            const merged = await importCourses(incoming, mode);
+            app.message.success(`已导入，当前共 ${merged.courses.length} 门课程`);
+            return merged;
+          }}
+        />
+      )}
+      {activePanel === 'rules' && (
+        <RulesDrawer
+          open
+          rules={rules}
+          onCancel={() => setActivePanel(undefined)}
+          onSave={async (nextRules) => {
+            await saveRules(nextRules);
+            app.message.success('计算规则已保存');
+          }}
+        />
+      )}
+      {activePanel === 'export' && (
+        <ExportDrawer
+          open
+          results={results}
+          calculated={hasCalculated}
+          exporting={exporting}
+          onClose={() => setActivePanel(undefined)}
+          onExport={exportResult}
+        />
+      )}
+      <CourseDrawer
+        open={editorOpen}
+        course={editingCourse}
+        recommendationIncluded={recommendationIncluded}
+        onClose={() => {
+          setEditorOpen(false);
+          setEditingCourse(undefined);
+        }}
+        onSave={saveCourse}
+      />
+      <AboutDialog open={aboutOpen} rules={rules} onClose={() => setAboutOpen(false)} />
+      <div className="export-host" aria-hidden="true">
+        <ResultExportCard
+          ref={exportRef}
+          results={results}
+          rules={rules}
+          generatedAt={generatedAt}
+        />
+      </div>
+    </AppShell>
+  );
+}
+
+export default function App() {
+  return (
+    <ConfigProvider
+      locale={zhCN}
+      theme={{
+        algorithm: theme.defaultAlgorithm,
+        token: {
+          colorPrimary: '#8F2C3E',
+          colorText: '#1D232B',
+          colorTextSecondary: '#707986',
+          colorBorder: '#DFE3E8',
+          borderRadius: 5,
+          fontFamily: '"Microsoft YaHei", "Segoe UI", system-ui, sans-serif'
+        },
+        components: {
+          Button: { controlHeight: 36 },
+          Table: { headerBg: '#F5F6F7', headerColor: '#4B5563', rowHoverBg: '#F8F9FA' }
+        }
+      }}
+    >
+      <AntApp>
+        <AppProvider>
+          <Workbench />
+        </AppProvider>
+      </AntApp>
+    </ConfigProvider>
+  );
+}
