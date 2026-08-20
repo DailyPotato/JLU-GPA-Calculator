@@ -19,6 +19,7 @@ interface AppState {
 type Action =
   | { type: 'HYDRATE'; courses: Course[]; rules: AppRuleSet }
   | { type: 'SET_COURSES'; courses: Course[] }
+  | { type: 'CLEAR_COURSES' }
   | { type: 'SET_RULES'; rules: AppRuleSet }
   | { type: 'CALCULATE' }
   | { type: 'SELECT_RESULT'; kind?: ResultKind }
@@ -30,6 +31,13 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, courses: action.courses, rules: action.rules, ready: true };
     case 'SET_COURSES':
       return { ...state, courses: action.courses };
+    case 'CLEAR_COURSES':
+      return {
+        ...state,
+        courses: [],
+        hasCalculated: false,
+        selectedResultKind: undefined
+      };
     case 'SET_RULES':
       return { ...state, rules: action.rules };
     case 'CALCULATE':
@@ -53,6 +61,7 @@ interface AppContextValue extends AppState {
   selectResultKind: (kind?: ResultKind) => void;
   saveCourse: (course: Course) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
+  clearCourses: () => Promise<void>;
   importCourses: (incoming: Course[], mode: ImportMergeMode) => Promise<MergeResult>;
   saveRules: (rules: AppRuleSet) => Promise<void>;
 }
@@ -129,6 +138,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [state.courses, withPersistenceError]
   );
 
+  const clearCourses = useCallback(
+    async () =>
+      withPersistenceError(async () => {
+        await database.clearCourses();
+        dispatch({ type: 'CLEAR_COURSES' });
+      }),
+    [withPersistenceError]
+  );
+
   const importCourses = useCallback(
     async (incoming: Course[], mode: ImportMergeMode) =>
       withPersistenceError(async () => {
@@ -162,10 +180,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       selectResultKind: (kind) => dispatch({ type: 'SELECT_RESULT', kind }),
       saveCourse,
       deleteCourse,
+      clearCourses,
       importCourses,
       saveRules
     }),
-    [state, results, saveCourse, deleteCourse, importCourses, saveRules]
+    [state, results, saveCourse, deleteCourse, clearCourses, importCourses, saveRules]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

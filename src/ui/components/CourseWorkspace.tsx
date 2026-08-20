@@ -1,4 +1,4 @@
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Select, Switch, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 import type { CalculationResult, Course, ResultKind } from '../../domain/course/course.types';
@@ -20,6 +20,7 @@ interface Props {
   selectedResult?: CalculationResult;
   recommendationResult: CalculationResult;
   onAdd: () => void;
+  onClear: () => void;
   onEdit: (course: Course) => void;
   onDelete: (course: Course) => Promise<void>;
   onRecommendationChange: (course: Course, included: boolean) => Promise<void>;
@@ -36,6 +37,7 @@ export function CourseWorkspace({
   selectedResult,
   recommendationResult,
   onAdd,
+  onClear,
   onEdit,
   onDelete,
   onRecommendationChange
@@ -43,7 +45,11 @@ export function CourseWorkspace({
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<CourseFilter>('all');
   const [sort, setSort] = useState<CourseSort>('name');
-  const [showExcluded, setShowExcluded] = useState(false);
+  const [showExcluded, setShowExcluded] = useState(true);
+
+  const excludedCount = selectedResultKind
+    ? (selectedResult?.excludedCourseIds.length ?? 0)
+    : recommendationResult.excludedCourseIds.length;
 
   const rows = useMemo(() => {
     const evaluationMap = new Map(
@@ -58,9 +64,12 @@ export function CourseWorkspace({
       recommendationEvaluation: recommendationMap.get(course.id)
     }));
 
-    if (selectedResultKind && selectedResult) {
-      next = next.filter((row) => showExcluded || row.evaluation?.included);
-    }
+    next = next.filter((row) => {
+      const visibilityEvaluation = selectedResultKind
+        ? row.evaluation
+        : row.recommendationEvaluation;
+      return showExcluded || visibilityEvaluation?.included;
+    });
 
     const normalizedQuery = normalizeText(query);
     if (normalizedQuery) {
@@ -125,9 +134,19 @@ export function CourseWorkspace({
           </Typography.Title>
           <Typography.Text type="secondary">{subtitle}</Typography.Text>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
-          添加课程
-        </Button>
+        <div className="workspace-actions">
+          <Button
+            className="clear-courses-button"
+            icon={<DeleteOutlined />}
+            disabled={courses.length === 0}
+            onClick={onClear}
+          >
+            清空课程
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
+            添加课程
+          </Button>
+        </div>
       </header>
 
       <div className="workspace-toolbar">
@@ -161,12 +180,18 @@ export function CourseWorkspace({
             { value: 'credit-desc', label: '学分从高到低' }
           ]}
         />
-        {selectedResultKind && (
-          <label className="show-excluded-control">
-            <Switch size="small" checked={showExcluded} onChange={setShowExcluded} />
-            <span>显示排除项</span>
-          </label>
-        )}
+        <label className="show-excluded-control">
+          <Switch
+            size="small"
+            checked={showExcluded}
+            aria-label="显示排除项"
+            onChange={setShowExcluded}
+          />
+          <span>显示排除项</span>
+          <span className="show-excluded-count" aria-hidden="true">
+            {excludedCount}
+          </span>
+        </label>
       </div>
 
       {!ready ? (

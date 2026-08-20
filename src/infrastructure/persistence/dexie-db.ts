@@ -42,6 +42,10 @@ export class JluGpaDatabase extends Dexie {
     await this.courses.delete(id);
   }
 
+  async clearCourses(): Promise<void> {
+    await this.courses.clear();
+  }
+
   async loadCourses(): Promise<Course[]> {
     return this.courses.toArray();
   }

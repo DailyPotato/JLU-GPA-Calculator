@@ -7,6 +7,7 @@ test('manual course workflow calculates, switches result views, exports and pers
   await page.goto('./');
   await expect(page.getByRole('complementary', { name: '功能栏' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '课程清单' })).toBeVisible();
+  await expect(page.getByRole('switch', { name: '显示排除项' })).toBeChecked();
   await expect(page.getByText('非吉林大学官方系统', { exact: true })).toHaveCount(0);
   await expect(page.getByText(/规则未核验 · 数据仅存本机/)).toHaveCount(0);
 
@@ -46,6 +47,7 @@ test('manual course workflow calculates, switches result views, exports and pers
   await page.getByRole('button', { name: '加权平均分 90.0000', exact: true }).click();
   await expect(page.getByRole('heading', { name: '加权平均分课程' })).toBeVisible();
   await expect(page.getByText('显示排除项', { exact: true })).toBeVisible();
+  await expect(page.getByRole('switch', { name: '显示排除项' })).toBeChecked();
 
   await page.getByRole('button', { name: '结果导出', exact: true }).click();
   await expect(page.getByRole('dialog', { name: '结果导出' })).toBeVisible();
@@ -79,6 +81,20 @@ test('manual course workflow calculates, switches result views, exports and pers
   await expect(page.locator('.ant-modal-confirm-title')).toHaveText('放弃未保存的修改？');
   await page.getByRole('button', { name: '放弃修改' }).click();
   await expect(page.getByRole('dialog', { name: '添加课程' })).toBeHidden();
+
+  await page.getByRole('button', { name: /清空课程/ }).click();
+  await expect(page.locator('.ant-modal-confirm-title')).toHaveText('清空全部课程？');
+  await expect(page.getByText(/删除当前保存的 1 门课程，并重置全部计算结果/)).toBeVisible();
+  await page.getByRole('button', { name: '确认清空' }).click();
+
+  await expect(page.getByText('共 0 门课程')).toBeVisible();
+  await expect(page.getByText('虚构测试课程')).toHaveCount(0);
+  await expect(page.locator('.result-summary')).toContainText([
+    '保研 GPA尚未计算',
+    '加权平均分尚未计算',
+    '不加权平均分尚未计算'
+  ]);
+  await expect(page.getByRole('button', { name: /清空课程/ })).toBeDisabled();
 });
 
 test('imports a synthetic CSV through the right-side preview drawer', async ({ page }) => {

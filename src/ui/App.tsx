@@ -28,6 +28,7 @@ function Workbench() {
     selectResultKind,
     saveCourse,
     deleteCourse,
+    clearCourses,
     importCourses,
     saveRules
   } = useAppState();
@@ -37,6 +38,7 @@ function Workbench() {
   const [editingCourse, setEditingCourse] = useState<Course>();
   const [exporting, setExporting] = useState(false);
   const [generatedAt, setGeneratedAt] = useState(() => new Date());
+  const [workspaceVersion, setWorkspaceVersion] = useState(0);
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -103,6 +105,29 @@ function Workbench() {
     }
   };
 
+  const confirmClearCourses = () => {
+    app.modal.confirm({
+      title: '清空全部课程？',
+      content: `将删除当前保存的 ${courses.length} 门课程，并重置全部计算结果。此操作无法撤销。`,
+      okText: '确认清空',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await clearCourses();
+          setActivePanel(undefined);
+          setEditorOpen(false);
+          setEditingCourse(undefined);
+          setWorkspaceVersion((version) => version + 1);
+          app.message.success('课程和计算结果已清空');
+        } catch (error) {
+          app.message.error(error instanceof Error ? error.message : '清空课程失败');
+          throw error;
+        }
+      }
+    });
+  };
+
   return (
     <AppShell
       sidebar={
@@ -127,6 +152,7 @@ function Workbench() {
       }
     >
       <CourseWorkspace
+        key={workspaceVersion}
         courses={courses}
         rules={rules}
         ready={ready}
@@ -134,6 +160,7 @@ function Workbench() {
         selectedResult={selectedResult}
         recommendationResult={results.recommendationGpa}
         onAdd={() => edit()}
+        onClear={confirmClearCourses}
         onEdit={edit}
         onDelete={async (course) => {
           try {
