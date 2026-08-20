@@ -41,9 +41,7 @@ test('manual course workflow calculates, switches result views, exports and pers
   await page.getByRole('button', { name: /开始计算/ }).click();
   await expect(page.getByRole('button', { name: '保研 GPA 4.0000', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '加权平均分 90.0000', exact: true })).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: '算术平均分 90.0000', exact: true })
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: '算术平均分 90.0000', exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: '加权平均分 90.0000', exact: true }).click();
   await expect(page.getByRole('heading', { name: '加权平均分课程' })).toBeVisible();
@@ -143,9 +141,7 @@ test('configures independent result exclusions and synchronizes them to one resu
   await page.getByRole('button', { name: /开始计算/ }).click();
   await expect(page.getByRole('button', { name: '保研 GPA 3.5000', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '加权平均分 90.0000', exact: true })).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: '算术平均分 90.0000', exact: true })
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: '算术平均分 90.0000', exact: true })).toBeVisible();
 });
 
 test('imports a synthetic CSV through the right-side preview drawer', async ({ page }) => {
