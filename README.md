@@ -1,2 +1,32 @@
-# JLU-GPA-Calculator
-A Windows app that helps JLU students calculate their GPA and average grade.
+# 吉林大学本科生绩点计算器
+
+面向吉林大学本科生的本地优先 GPA、加权平均分和不加权平均分计算工具。应用部署为 GitHub Pages 静态 PWA，成绩表只在浏览器中解析，课程和设置保存在当前浏览器的 IndexedDB 中。
+
+> 本项目不是吉林大学官方系统。默认绩点映射、五级制折算和保研课程范围均以“未核验项目预设”标识，请按适用年份、学院和专业文件核对后使用。
+
+## 首版功能
+
+- 导入 `.xls`、`.xlsx`、`.csv`，支持吉林大学常见表头、预览、多工作表选择、部分成功、覆盖或追加；
+- 手动新增、编辑、删除课程，逐门选择是否参与均分并设置保研纳入方式；
+- 同一课程号只保留最高有效成绩参与计算，同名不同号不合并；
+- 五级制默认按优秀 95、良好 85、中等 75、及格 65、不及格 0 折算；
+- 保研 GPA、加权平均分、不加权平均分统一显示四位小数；
+- 自定义五级制折算表、分数—绩点表和保研排除清单；
+- 结果课程明细、排除原因、PNG/PDF 摘要导出；
+- IndexedDB 自动保存和 PWA 离线访问。
+
+## 本地开发
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+完整校验：
+
+```powershell
+pnpm check
+pnpm test:e2e
+```
+
+生产构建默认使用 GitHub Pages 子路径 `/JLU-GPA-Calculator/`。真实成绩文件、导出结果和本地验收数据禁止提交到仓库。

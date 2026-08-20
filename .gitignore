@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.DS_Store
+*.local
+*.tsbuildinfo
+*.xlsx
+*.xls
+*.csv
+!src/test-fixtures/**/*.xlsx
+!src/test-fixtures/**/*.xls
+!src/test-fixtures/**/*.csv
+全部成绩查询*
+真实成绩*
+local-validation/
