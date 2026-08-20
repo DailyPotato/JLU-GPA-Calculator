@@ -13,8 +13,8 @@ export default defineConfig(({ mode }) => ({
         name: '吉林大学本科生绩点计算器',
         short_name: 'JLU GPA',
         description: '成绩仅在浏览器本地处理的绩点与均分计算器。',
-        theme_color: '#7c3aed',
-        background_color: '#f5f3ff',
+        theme_color: '#8f2c3e',
+        background_color: '#f5f6f7',
         display: 'standalone',
         start_url: '.',
         icons: [

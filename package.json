@@ -19,6 +19,7 @@
     "check": "pnpm lint && pnpm format:check && pnpm test && pnpm build"
   },
   "dependencies": {
+    "@ant-design/icons": "6.1.0",
     "antd": "^6.6.1",
     "dexie": "^4.4.5",
     "html-to-image": "^1.11.13",

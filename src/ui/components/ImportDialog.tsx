@@ -1,4 +1,15 @@
-import { Alert, Descriptions, Modal, Radio, Select, Space, Table, Typography, Upload } from 'antd';
+import {
+  Alert,
+  Button,
+  Descriptions,
+  Drawer,
+  Radio,
+  Select,
+  Space,
+  Table,
+  Typography,
+  Upload
+} from 'antd';
 import type { UploadProps } from 'antd';
 import { useMemo, useState } from 'react';
 import { mergeCourses } from '../../application/merge-courses';
@@ -16,7 +27,7 @@ interface Props {
   onCommit: (courses: Course[], mode: ImportMergeMode) => Promise<MergeResult>;
 }
 
-export function ImportDialog({ open, existingCourses, onCancel, onCommit }: Props) {
+export function ImportDrawer({ open, existingCourses, onCancel, onCommit }: Props) {
   const [file, setFile] = useState<File>();
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<string>();
@@ -78,27 +89,29 @@ export function ImportDialog({ open, existingCourses, onCancel, onCommit }: Prop
   };
 
   return (
-    <Modal
+    <Drawer
       open={open}
       title="导入成绩表"
-      width={820}
-      okText={mode === 'replace' && existingCourses.length ? '确认覆盖' : '确认导入'}
-      cancelText="取消"
-      okButtonProps={{
-        disabled: !preview || preview.importableCount === 0,
-        danger: mode === 'replace' && existingCourses.length > 0
-      }}
-      confirmLoading={busy}
-      onOk={() => void confirm()}
-      onCancel={onCancel}
+      size={720}
+      className="functional-drawer import-drawer"
+      onClose={onCancel}
       destroyOnHidden
+      extra={
+        <Space>
+          <Button onClick={onCancel}>取消</Button>
+          <Button
+            type="primary"
+            disabled={!preview || preview.importableCount === 0}
+            danger={mode === 'replace' && existingCourses.length > 0}
+            loading={busy}
+            onClick={() => void confirm()}
+          >
+            {mode === 'replace' && existingCourses.length ? '确认覆盖' : '确认导入'}
+          </Button>
+        </Space>
+      }
     >
-      <Space direction="vertical" size="middle" className="full-width">
-        <Alert
-          type="info"
-          showIcon
-          message="成绩表只在当前浏览器中解析，不会上传。支持 .xls、.xlsx、.csv，最大 10 MB / 5,000 行。"
-        />
+      <Space orientation="vertical" size="middle" className="full-width">
         <Upload.Dragger
           accept=".xls,.xlsx,.csv"
           maxCount={1}
@@ -196,6 +209,6 @@ export function ImportDialog({ open, existingCourses, onCancel, onCommit }: Prop
           </>
         )}
       </Space>
-    </Modal>
+    </Drawer>
   );
 }

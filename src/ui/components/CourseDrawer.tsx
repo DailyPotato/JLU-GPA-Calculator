@@ -1,5 +1,5 @@
-import { Form, Input, InputNumber, Modal, Radio, Select, Switch } from 'antd';
-import { useEffect } from 'react';
+import { App, Button, Drawer, Form, Input, InputNumber, Radio, Select, Space, Switch } from 'antd';
+import { useEffect, useState } from 'react';
 import { parseSemester } from '../../domain/course/course.normalizer';
 import type { Course, LevelGrade } from '../../domain/course/course.types';
 
@@ -15,14 +15,15 @@ interface CourseFormValues {
   courseCategory?: string;
   courseNature?: string;
   userIncluded: boolean;
-  recommendationOverride: 'auto' | 'include' | 'exclude';
+  recommendationIncluded: boolean;
   isValid: boolean;
 }
 
 interface Props {
   open: boolean;
   course?: Course;
-  onCancel: () => void;
+  recommendationIncluded?: boolean;
+  onClose: () => void;
   onSave: (course: Course) => Promise<void>;
 }
 
@@ -30,8 +31,11 @@ function createId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `course-${Date.now()}-${Math.random()}`;
 }
 
-export function CourseEditor({ open, course, onCancel, onSave }: Props) {
+export function CourseDrawer({ open, course, recommendationIncluded, onClose, onSave }: Props) {
+  const app = App.useApp();
   const [form] = Form.useForm<CourseFormValues>();
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const gradeKind = Form.useWatch('gradeKind', form);
 
   useEffect(() => {
@@ -50,10 +54,26 @@ export function CourseEditor({ open, course, onCancel, onSave }: Props) {
       courseCategory: course?.attributes.courseCategory,
       courseNature: course?.attributes.courseNature,
       userIncluded: course?.control.userIncluded ?? true,
-      recommendationOverride: course?.control.recommendationOverride ?? 'auto',
+      recommendationIncluded: recommendationIncluded ?? true,
       isValid: course?.record.isValid ?? true
     });
-  }, [course, form, open]);
+  }, [course, form, open, recommendationIncluded]);
+
+  const close = () => {
+    if (!dirty) {
+      onClose();
+      return;
+    }
+    app.modal.confirm({
+      title: '放弃未保存的修改？',
+      okText: '放弃修改',
+      cancelText: '继续编辑',
+      onOk: () => {
+        setDirty(false);
+        onClose();
+      }
+    });
+  };
 
   const submit = async () => {
     const values = await form.validateFields();
@@ -87,7 +107,7 @@ export function CourseEditor({ open, course, onCancel, onSave }: Props) {
       },
       control: {
         userIncluded: values.userIncluded,
-        recommendationOverride: values.recommendationOverride
+        recommendationOverride: values.recommendationIncluded ? 'include' : 'exclude'
       },
       provenance: course?.provenance ?? { source: 'manual' },
       audit: {
@@ -95,40 +115,54 @@ export function CourseEditor({ open, course, onCancel, onSave }: Props) {
         updatedAt: now
       }
     };
-    await onSave(updated);
-    form.resetFields();
+
+    setSaving(true);
+    try {
+      await onSave(updated);
+      setDirty(false);
+      form.resetFields();
+      onClose();
+      app.message.success(course ? '课程已更新' : '课程已添加');
+    } catch (error) {
+      app.message.error(error instanceof Error ? error.message : '课程保存失败');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <Modal
+    <Drawer
       open={open}
-      title={course ? '编辑课程' : '手动添加课程'}
-      okText="保存课程"
-      cancelText="取消"
-      onCancel={onCancel}
-      onOk={() => void submit()}
+      title={course ? '编辑课程' : '添加课程'}
+      size={500}
+      className="functional-drawer course-drawer"
+      onClose={close}
       destroyOnHidden
-      width={680}
+      extra={
+        <Space>
+          <Button onClick={close}>取消</Button>
+          <Button type="primary" loading={saving} onClick={() => void submit()}>
+            保存课程
+          </Button>
+        </Space>
+      }
     >
-      <Form form={form} layout="vertical" requiredMark="optional">
+      <Form
+        form={form}
+        layout="vertical"
+        requiredMark="optional"
+        onValuesChange={() => setDirty(true)}
+      >
+        <Form.Item label="课程号" name="code" rules={[{ required: true, message: '请输入课程号' }]}>
+          <Input placeholder="仅课程号相同才视为同一课程" />
+        </Form.Item>
+        <Form.Item label="课程名" name="name" rules={[{ required: true, message: '请输入课程名' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item label="学年学期" name="rawTerm">
+          <Input placeholder="例如 2025-2026-1" />
+        </Form.Item>
         <div className="form-grid">
-          <Form.Item
-            label="课程号"
-            name="code"
-            rules={[{ required: true, message: '请输入课程号' }]}
-          >
-            <Input placeholder="仅课程号相同才会判定为同一课程" />
-          </Form.Item>
-          <Form.Item
-            label="课程名"
-            name="name"
-            rules={[{ required: true, message: '请输入课程名' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item label="学年学期" name="rawTerm">
-            <Input placeholder="例如 2025-2026-1" />
-          </Form.Item>
           <Form.Item label="成绩类型" name="gradeKind" rules={[{ required: true }]}>
             <Radio.Group
               optionType="button"
@@ -163,36 +197,28 @@ export function CourseEditor({ open, course, onCancel, onSave }: Props) {
           <Form.Item label="学分" name="credit" rules={[{ required: true, message: '请输入学分' }]}>
             <InputNumber min={0.01} precision={2} className="full-width" />
           </Form.Item>
-          <Form.Item label="教务绩点（可选）" name="importedGradePoint">
+          <Form.Item label="教务导入绩点" name="importedGradePoint">
             <InputNumber min={0} precision={4} className="full-width" />
           </Form.Item>
-          <Form.Item label="课程类别" name="courseCategory">
-            <Input />
+        </div>
+        <Form.Item label="课程类别" name="courseCategory">
+          <Input />
+        </Form.Item>
+        <Form.Item label="课程性质" name="courseNature">
+          <Input />
+        </Form.Item>
+        <div className="course-switches">
+          <Form.Item label="保研课程" name="recommendationIncluded" valuePropName="checked">
+            <Switch checkedChildren="是" unCheckedChildren="否" />
           </Form.Item>
-          <Form.Item label="课程性质" name="courseNature">
-            <Input />
+          <Form.Item label="参与均分" name="userIncluded" valuePropName="checked">
+            <Switch checkedChildren="是" unCheckedChildren="否" />
+          </Form.Item>
+          <Form.Item label="成绩记录有效" name="isValid" valuePropName="checked">
+            <Switch checkedChildren="是" unCheckedChildren="否" />
           </Form.Item>
         </div>
-        <Form.Item label="是否参与均分计算" name="userIncluded" valuePropName="checked">
-          <Switch checkedChildren="参与" unCheckedChildren="排除" />
-        </Form.Item>
-        <Form.Item
-          label="保研科目设置"
-          name="recommendationOverride"
-          extra="“自动判断”使用当前保研规则；也可以强制纳入或排除。"
-        >
-          <Radio.Group
-            options={[
-              { label: '自动判断', value: 'auto' },
-              { label: '强制纳入', value: 'include' },
-              { label: '强制排除', value: 'exclude' }
-            ]}
-          />
-        </Form.Item>
-        <Form.Item label="成绩记录有效" name="isValid" valuePropName="checked">
-          <Switch />
-        </Form.Item>
       </Form>
-    </Modal>
+    </Drawer>
   );
 }

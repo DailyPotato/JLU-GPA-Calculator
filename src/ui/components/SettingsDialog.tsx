@@ -2,9 +2,9 @@ import {
   Alert,
   Button,
   Divider,
+  Drawer,
   Input,
   InputNumber,
-  Modal,
   Radio,
   Space,
   Table,
@@ -51,7 +51,7 @@ function validateBands(bands: GradePointBand[]): GradePointBand[] {
   return sorted;
 }
 
-export function SettingsDialog({ open, rules, onCancel, onSave }: Props) {
+export function RulesDrawer({ open, rules, onCancel, onSave }: Props) {
   const [draft, setDraft] = useState<AppRuleSet>(() => structuredClone(rules));
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
@@ -91,23 +91,23 @@ export function SettingsDialog({ open, rules, onCancel, onSave }: Props) {
   };
 
   return (
-    <Modal
+    <Drawer
       open={open}
       title="计算规则设置"
-      width={900}
-      okText="保存规则"
-      cancelText="取消"
-      confirmLoading={saving}
-      onOk={() => void save()}
-      onCancel={onCancel}
+      size={760}
+      className="functional-drawer rules-drawer"
+      onClose={onCancel}
       destroyOnHidden
+      extra={
+        <Space>
+          <Button onClick={onCancel}>取消</Button>
+          <Button type="primary" loading={saving} onClick={() => void save()}>
+            保存规则
+          </Button>
+        </Space>
+      }
     >
-      <Space direction="vertical" size="middle" className="full-width">
-        <Alert
-          type="warning"
-          showIcon
-          message="当前预设尚未按学院、专业和适用年份核验。自定义修改只保存在本浏览器，不代表吉林大学官方规则。"
-        />
+      <Space orientation="vertical" size="middle" className="full-width">
         <div>
           <Typography.Title level={4}>绩点取值方式</Typography.Title>
           <Radio.Group
@@ -245,7 +245,7 @@ export function SettingsDialog({ open, rules, onCancel, onSave }: Props) {
           <Typography.Paragraph type="secondary">
             只影响保研 GPA，不影响两种均分。均为规范化后的精确匹配，不做模糊匹配。
           </Typography.Paragraph>
-          <Space direction="vertical" className="full-width">
+          <Space orientation="vertical" className="full-width">
             <label>
               排除的课程性质/类别值（逗号或换行分隔）
               <Input.TextArea
@@ -298,6 +298,6 @@ export function SettingsDialog({ open, rules, onCancel, onSave }: Props) {
         </div>
         {error && <Alert type="error" showIcon message={error} />}
       </Space>
-    </Modal>
+    </Drawer>
   );
 }

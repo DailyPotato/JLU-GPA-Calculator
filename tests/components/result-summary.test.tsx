@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { CalculationResult } from '../../src/domain/course/course.types';
-import { ResultCard } from '../../src/ui/components/ResultCard';
+import { ResultSummary } from '../../src/ui/components/ResultSummary';
 
 const success: CalculationResult = {
   kind: 'weighted-average',
@@ -15,10 +15,15 @@ const success: CalculationResult = {
   evaluations: []
 };
 
-describe('ResultCard', () => {
+describe('ResultSummary', () => {
   it('hides values before the first explicit calculation', () => {
     render(
-      <ResultCard result={success} active={false} calculated={false} onClick={() => undefined} />
+      <ResultSummary
+        result={success}
+        active={false}
+        calculated={false}
+        onSelect={() => undefined}
+      />
     );
     expect(screen.getByText('尚未计算')).toBeInTheDocument();
     expect(screen.queryByText('90.0000')).not.toBeInTheDocument();
@@ -26,7 +31,7 @@ describe('ResultCard', () => {
 
   it('shows four decimals and opens details after calculation', () => {
     const onClick = vi.fn();
-    render(<ResultCard result={success} active={false} calculated onClick={onClick} />);
+    render(<ResultSummary result={success} active={false} calculated onSelect={onClick} />);
     fireEvent.click(screen.getByRole('button'));
     expect(screen.getByText('90.0000')).toBeInTheDocument();
     expect(onClick).toHaveBeenCalledOnce();

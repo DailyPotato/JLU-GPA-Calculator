@@ -12,7 +12,7 @@ interface AppState {
   rules: AppRuleSet;
   ready: boolean;
   hasCalculated: boolean;
-  expandedKind?: ResultKind;
+  selectedResultKind?: ResultKind;
   persistenceError?: string;
 }
 
@@ -21,7 +21,7 @@ type Action =
   | { type: 'SET_COURSES'; courses: Course[] }
   | { type: 'SET_RULES'; rules: AppRuleSet }
   | { type: 'CALCULATE' }
-  | { type: 'TOGGLE_EXPANDED'; kind: ResultKind }
+  | { type: 'SELECT_RESULT'; kind?: ResultKind }
   | { type: 'SET_ERROR'; message?: string };
 
 function reducer(state: AppState, action: Action): AppState {
@@ -34,11 +34,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, rules: action.rules };
     case 'CALCULATE':
       return { ...state, hasCalculated: true };
-    case 'TOGGLE_EXPANDED':
-      return {
-        ...state,
-        expandedKind: state.expandedKind === action.kind ? undefined : action.kind
-      };
+    case 'SELECT_RESULT':
+      return { ...state, selectedResultKind: action.kind };
     case 'SET_ERROR':
       return { ...state, persistenceError: action.message };
   }
@@ -53,7 +50,7 @@ export interface AllResults {
 interface AppContextValue extends AppState {
   results: AllResults;
   startCalculation: () => void;
-  toggleExpanded: (kind: ResultKind) => void;
+  selectResultKind: (kind?: ResultKind) => void;
   saveCourse: (course: Course) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
   importCourses: (incoming: Course[], mode: ImportMergeMode) => Promise<MergeResult>;
@@ -162,7 +159,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ...state,
       results,
       startCalculation: () => dispatch({ type: 'CALCULATE' }),
-      toggleExpanded: (kind) => dispatch({ type: 'TOGGLE_EXPANDED', kind }),
+      selectResultKind: (kind) => dispatch({ type: 'SELECT_RESULT', kind }),
       saveCourse,
       deleteCourse,
       importCourses,
