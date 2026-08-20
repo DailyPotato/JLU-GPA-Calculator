@@ -43,4 +43,17 @@ describe('JluGpaDatabase', () => {
     await expect(database.replaceCourses([duplicate, duplicate])).rejects.toThrow();
     expect(await database.loadCourses()).toEqual([original]);
   });
+
+  it('clears all courses without removing saved rules and settings', async () => {
+    const database = createDatabase();
+    await database.saveCourse(makeCourse('1', 92, 3));
+    await database.saveRuleSet(defaultRuleSet);
+    await database.saveSetting('active-rule-set', defaultRuleSet);
+
+    await database.clearCourses();
+
+    expect(await database.loadCourses()).toEqual([]);
+    expect(await database.loadRuleSet(defaultRuleSet.id)).toEqual(defaultRuleSet);
+    expect(await database.loadSetting('active-rule-set')).toEqual(defaultRuleSet);
+  });
 });
