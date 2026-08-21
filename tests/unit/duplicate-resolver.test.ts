@@ -9,7 +9,7 @@ describe('duplicate course resolution', () => {
     const higher = makeCourse('2', 90, 3, { identity: { code: 'AE-001', name: '课程 A' } });
     const result = calculateResult([lower, higher], 'weighted-average', defaultRuleSet);
     expect(result.includedCourseIds).toEqual(['2']);
-    expect(result.formattedValue).toBe('90.0000');
+    expect(result.formattedValue).toBe('90.00');
     expect(result.evaluations.find((evaluation) => evaluation.courseId === '1')).toMatchObject({
       included: false,
       duplicateOf: '2',
@@ -36,6 +36,6 @@ describe('duplicate course resolution', () => {
     const second = makeCourse('2', 90, 1, { identity: { code: 'B', name: '同名课程' } });
     const result = calculateResult([first, second], 'arithmetic-average', defaultRuleSet);
     expect(result.courseCount).toBe(2);
-    expect(result.formattedValue).toBe('85.0000');
+    expect(result.formattedValue).toBe('85.00');
   });
 });

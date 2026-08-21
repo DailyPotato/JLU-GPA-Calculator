@@ -25,10 +25,10 @@ describe('calculation pipeline', () => {
       })
     ];
     const results = calculateAllResults(courses, defaultRuleSet);
-    expect(results.recommendationGpa.formattedValue).toBe('4.0000');
+    expect(results.recommendationGpa.formattedValue).toBe('4.00');
     expect(results.weightedAverage.value).toBe((96.9 * 4 + 82 * 2) / 6);
-    expect(results.weightedAverage.formattedValue).toBe('91.9333');
-    expect(results.arithmeticAverage.formattedValue).toBe('89.4500');
+    expect(results.weightedAverage.formattedValue).toBe('91.93');
+    expect(results.arithmeticAverage.formattedValue).toBe('89.45');
   });
 
   it('returns empty instead of zero for no recommendation courses', () => {
@@ -59,8 +59,8 @@ describe('calculation pipeline', () => {
       identity: { code: 'EXCLUDED', name: '被排除课程' }
     });
     expect(calculateResult([course], 'recommendation-gpa', rules).status).toBe('empty');
-    expect(calculateResult([course], 'weighted-average', rules).formattedValue).toBe('88.0000');
-    expect(calculateResult([course], 'arithmetic-average', rules).formattedValue).toBe('88.0000');
+    expect(calculateResult([course], 'weighted-average', rules).formattedValue).toBe('88.00');
+    expect(calculateResult([course], 'arithmetic-average', rules).formattedValue).toBe('88.00');
   });
 
   it('supports independent keyword exclusions and ignores empty entries', () => {
@@ -84,9 +84,9 @@ describe('calculation pipeline', () => {
 
     const weighted = calculateResult([english, math], 'weighted-average', rules);
     const arithmetic = calculateResult([english, math], 'arithmetic-average', rules);
-    expect(weighted).toMatchObject({ formattedValue: '92.0000', includedCourseIds: ['2'] });
+    expect(weighted).toMatchObject({ formattedValue: '92.00', includedCourseIds: ['2'] });
     expect(weighted.evaluations[0].exclusionCodes).toContain('result-keyword-excluded');
-    expect(arithmetic).toMatchObject({ formattedValue: '90.0000', courseCount: 2 });
+    expect(arithmetic).toMatchObject({ formattedValue: '90.00', courseCount: 2 });
   });
 
   it.each([
@@ -132,8 +132,8 @@ describe('calculation pipeline', () => {
     const results = calculateAllResults([course], defaultRuleSet);
     expect(results.recommendationGpa).toMatchObject({
       status: 'success',
-      formattedValue: '0.0000'
+      formattedValue: '0.00'
     });
-    expect(results.weightedAverage).toMatchObject({ status: 'success', formattedValue: '0.0000' });
+    expect(results.weightedAverage).toMatchObject({ status: 'success', formattedValue: '0.00' });
   });
 });

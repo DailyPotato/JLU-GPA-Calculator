@@ -113,6 +113,7 @@ export function RulesDrawer({ open, rules, onCancel, onSave }: Props) {
                 <InputNumber
                   min={0}
                   max={100}
+                  precision={1}
                   value={draft.gradePoint.levelScores[level]}
                   onChange={(value) =>
                     setDraft({
@@ -164,6 +165,7 @@ export function RulesDrawer({ open, rules, onCancel, onSave }: Props) {
                 title: '下限（含）',
                 render: (_, band, index) => (
                   <InputNumber
+                    precision={1}
                     value={band.minInclusive}
                     onChange={(value) => updateBand(index, 'minInclusive', value)}
                   />
@@ -173,6 +175,7 @@ export function RulesDrawer({ open, rules, onCancel, onSave }: Props) {
                 title: '上限（不含）',
                 render: (_, band, index) => (
                   <InputNumber
+                    precision={1}
                     value={band.maxExclusive}
                     onChange={(value) => updateBand(index, 'maxExclusive', value)}
                   />
@@ -183,7 +186,7 @@ export function RulesDrawer({ open, rules, onCancel, onSave }: Props) {
                 render: (_, band, index) => (
                   <InputNumber
                     min={0}
-                    precision={2}
+                    precision={1}
                     value={band.gradePoint}
                     onChange={(value) => updateBand(index, 'gradePoint', value)}
                   />

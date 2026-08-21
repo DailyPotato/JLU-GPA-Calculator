@@ -1,4 +1,18 @@
-import { App, Button, Drawer, Form, Input, InputNumber, Radio, Select, Space, Switch } from 'antd';
+import { FileAddOutlined } from '@ant-design/icons';
+import {
+  App,
+  Button,
+  Divider,
+  Drawer,
+  Form,
+  Input,
+  InputNumber,
+  Radio,
+  Select,
+  Space,
+  Switch,
+  Typography
+} from 'antd';
 import { useEffect, useState } from 'react';
 import { parseSemester } from '../../domain/course/course.normalizer';
 import type { Course, LevelGrade } from '../../domain/course/course.types';
@@ -24,6 +38,7 @@ interface Props {
   course?: Course;
   recommendationIncluded?: boolean;
   onClose: () => void;
+  onImport: () => void;
   onSave: (course: Course) => Promise<void>;
 }
 
@@ -31,7 +46,14 @@ function createId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `course-${Date.now()}-${Math.random()}`;
 }
 
-export function CourseDrawer({ open, course, recommendationIncluded, onClose, onSave }: Props) {
+export function CourseDrawer({
+  open,
+  course,
+  recommendationIncluded,
+  onClose,
+  onImport,
+  onSave
+}: Props) {
   const app = App.useApp();
   const [form] = Form.useForm<CourseFormValues>();
   const [saving, setSaving] = useState(false);
@@ -71,6 +93,24 @@ export function CourseDrawer({ open, course, recommendationIncluded, onClose, on
       onOk: () => {
         setDirty(false);
         onClose();
+      }
+    });
+  };
+
+  const openImport = () => {
+    if (!dirty) {
+      onImport();
+      return;
+    }
+    app.modal.confirm({
+      title: '改为导入成绩表？',
+      content: '当前手动填写的内容尚未保存。',
+      okText: '放弃并导入',
+      cancelText: '继续编辑',
+      onOk: () => {
+        setDirty(false);
+        form.resetFields();
+        onImport();
       }
     });
   };
@@ -147,6 +187,29 @@ export function CourseDrawer({ open, course, recommendationIncluded, onClose, on
         </Space>
       }
     >
+      {!course && (
+        <>
+          <section className="course-import-entry" aria-labelledby="course-import-entry-title">
+            <span className="course-import-entry-icon" aria-hidden="true">
+              <FileAddOutlined />
+            </span>
+            <div className="course-import-entry-copy">
+              <Typography.Text id="course-import-entry-title" strong>
+                从成绩表批量添加
+              </Typography.Text>
+              <Typography.Text type="secondary">
+                支持 XLS、XLSX 和 CSV；适配表可恢复课程排除状态
+              </Typography.Text>
+            </div>
+            <Button aria-label="导入成绩表" icon={<FileAddOutlined />} onClick={openImport}>
+              导入成绩表
+            </Button>
+          </section>
+          <Divider plain className="course-entry-divider">
+            或手动填写
+          </Divider>
+        </>
+      )}
       <Form
         form={form}
         layout="vertical"
@@ -191,14 +254,14 @@ export function CourseDrawer({ open, course, recommendationIncluded, onClose, on
               name="percentageGrade"
               rules={[{ required: true, message: '请输入成绩' }]}
             >
-              <InputNumber min={0} max={100} precision={2} className="full-width" />
+              <InputNumber min={0} max={100} precision={1} className="full-width" />
             </Form.Item>
           )}
           <Form.Item label="学分" name="credit" rules={[{ required: true, message: '请输入学分' }]}>
-            <InputNumber min={0.01} precision={2} className="full-width" />
+            <InputNumber min={0.1} precision={1} className="full-width" />
           </Form.Item>
           <Form.Item label="教务导入绩点" name="importedGradePoint">
-            <InputNumber min={0} precision={4} className="full-width" />
+            <InputNumber min={0} precision={1} className="full-width" />
           </Form.Item>
         </div>
         <Form.Item label="课程类别" name="courseCategory">

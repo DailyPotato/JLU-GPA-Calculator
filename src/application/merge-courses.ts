@@ -26,26 +26,44 @@ export function mergeCourses(
       courses: incoming,
       addedCount: incoming.length,
       replacedCount: existing.length,
-      exactDuplicateCount: 0
+      exactDuplicateCount: 0,
+      restoredExclusionCount: incoming.filter(
+        (course) => course.provenance.source === 'backup' && !course.control.userIncluded
+      ).length
     };
   }
 
-  const keys = new Set(existing.map(exactRecordKey));
-  const added: Course[] = [];
+  const merged = [...existing];
+  const indexByKey = new Map(existing.map((course, index) => [exactRecordKey(course), index]));
   let exactDuplicateCount = 0;
+  let restoredExclusionCount = 0;
   for (const course of incoming) {
     const key = exactRecordKey(course);
-    if (keys.has(key)) {
+    const existingIndex = indexByKey.get(key);
+    if (existingIndex !== undefined) {
       exactDuplicateCount += 1;
+      if (course.provenance.source === 'backup') {
+        const current = merged[existingIndex];
+        merged[existingIndex] = {
+          ...current,
+          control: { ...current.control, userIncluded: course.control.userIncluded },
+          audit: { ...current.audit, updatedAt: new Date().toISOString() }
+        };
+        if (!course.control.userIncluded) restoredExclusionCount += 1;
+      }
       continue;
     }
-    keys.add(key);
-    added.push(course);
+    indexByKey.set(key, merged.length);
+    merged.push(course);
+    if (course.provenance.source === 'backup' && !course.control.userIncluded) {
+      restoredExclusionCount += 1;
+    }
   }
   return {
-    courses: [...existing, ...added],
-    addedCount: added.length,
+    courses: merged,
+    addedCount: merged.length - existing.length,
     replacedCount: 0,
-    exactDuplicateCount
+    exactDuplicateCount,
+    restoredExclusionCount
   };
 }

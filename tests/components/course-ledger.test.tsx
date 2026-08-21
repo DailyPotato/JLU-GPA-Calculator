@@ -38,9 +38,9 @@ describe('CourseLedger', () => {
 
     expect(screen.getByText('虚构测试课程')).toBeInTheDocument();
     expect(screen.getByText('TEST-001')).toBeInTheDocument();
-    expect(screen.getByText('90')).toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();
-    expect(screen.getByText('4.0000')).toBeInTheDocument();
+    expect(screen.getByText('90.0')).toBeInTheDocument();
+    expect(screen.getByText('2.0')).toBeInTheDocument();
+    expect(screen.getByText('4.0')).toBeInTheDocument();
     expect(screen.queryByText(/自动/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('switch', { name: '虚构测试课程保研课程' }));

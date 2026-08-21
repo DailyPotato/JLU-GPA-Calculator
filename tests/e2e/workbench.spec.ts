@@ -1,13 +1,19 @@
 import { expect, test } from '@playwright/test';
 import { Buffer } from 'node:buffer';
+import { readFile } from 'node:fs/promises';
+import * as XLSX from 'xlsx';
 
 test('manual course workflow calculates, switches result views, exports and persists', async ({
   page
 }) => {
   await page.goto('./');
   await expect(page.getByRole('complementary', { name: '功能栏' })).toBeVisible();
+  await expect(page.locator('.sidebar-avatar-slot')).toHaveCount(1);
+  await expect(page.locator('.sidebar-avatar-slot img')).toHaveAttribute('src', /headshot\.jpg$/);
+  await expect(page.locator('.sidebar-brand-mark')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: '课程清单' })).toBeVisible();
   await expect(page.getByRole('switch', { name: '显示排除项' })).toBeChecked();
+  await expect(page.getByRole('button', { name: '导入成绩', exact: true })).toHaveCount(0);
   await expect(page.getByText('非吉林大学官方系统', { exact: true })).toHaveCount(0);
   await expect(page.getByText(/规则未核验 · 数据仅存本机/)).toHaveCount(0);
 
@@ -35,22 +41,32 @@ test('manual course workflow calculates, switches result views, exports and pers
   await expect(row).toBeVisible();
   await expect(row).toContainText('90');
   await expect(row).toContainText('2');
-  await expect(row).toContainText('4.0000');
+  await expect(row).toContainText('4.0');
   await expect(row.getByRole('switch', { name: '虚构测试课程保研课程' })).toBeChecked();
 
   await page.getByRole('button', { name: /开始计算/ }).click();
-  await expect(page.getByRole('button', { name: '保研 GPA 4.0000', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '加权平均分 90.0000', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '算术平均分 90.0000', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '保研 GPA 4.00', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '加权平均分 90.00', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '算术平均分 90.00', exact: true })).toBeVisible();
 
-  await page.getByRole('button', { name: '加权平均分 90.0000', exact: true }).click();
+  await page.getByRole('button', { name: '加权平均分 90.00', exact: true }).click();
   await expect(page.getByRole('heading', { name: '加权平均分课程' })).toBeVisible();
   await expect(page.getByText('显示排除项', { exact: true })).toBeVisible();
   await expect(page.getByRole('switch', { name: '显示排除项' })).toBeChecked();
 
   await page.getByRole('button', { name: '结果导出', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: '结果导出' })).toBeVisible();
+  const exportDrawer = page.getByRole('dialog', { name: '结果导出' });
+  await expect(exportDrawer).toBeVisible();
+  await expect(exportDrawer.locator('.export-preview-results strong')).toHaveText([
+    '4.0',
+    '90.0',
+    '90.0'
+  ]);
   await expect(page.getByTestId('course-ledger')).toBeVisible();
+
+  const workbookDownloadPromise = page.waitForEvent('download');
+  await exportDrawer.getByRole('button', { name: '导出适配表格' }).click();
+  expect((await workbookDownloadPromise).suggestedFilename()).toMatch(/\.xlsx$/);
 
   const pngDownloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: '导出 PNG 图片' }).click();
@@ -100,7 +116,14 @@ test('configures independent result exclusions and synchronizes them to one resu
   page
 }) => {
   await page.goto('./');
-  await page.getByRole('button', { name: '导入成绩', exact: true }).click();
+  await page
+    .getByRole('button', { name: /添加课程/ })
+    .first()
+    .click();
+  const addDrawer = page.getByRole('dialog', { name: '添加课程' });
+  await expect(addDrawer.getByText('从成绩表批量添加')).toBeVisible();
+  await addDrawer.getByRole('button', { name: '导入成绩表' }).click();
+  await expect(page.getByRole('dialog', { name: '导入成绩表' })).toBeVisible();
   const chooserPromise = page.waitForEvent('filechooser');
   await page.getByText('点击或拖入成绩表').click();
   const chooser = await chooserPromise;
@@ -139,14 +162,66 @@ test('configures independent result exclusions and synchronizes them to one resu
   await drawer.getByRole('button', { name: '取消' }).click();
 
   await page.getByRole('button', { name: /开始计算/ }).click();
-  await expect(page.getByRole('button', { name: '保研 GPA 3.5000', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '加权平均分 90.0000', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '算术平均分 90.0000', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '保研 GPA 3.50', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '加权平均分 90.00', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '算术平均分 90.00', exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: '结果导出', exact: true }).click();
+  const workbookDownloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: '导出适配表格' }).click();
+  const workbookDownload = await workbookDownloadPromise;
+  const workbookPath = await workbookDownload.path();
+  expect(workbookPath).not.toBeNull();
+  const workbook = XLSX.read(await readFile(workbookPath!), { type: 'buffer' });
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(
+    workbook.Sheets[workbook.SheetNames[0]]
+  );
+  expect(rows).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ 课程号: 'KEEP-001', 是否排除: '否' }),
+      expect.objectContaining({ 课程号: 'DROP-001', 是否排除: '是' })
+    ])
+  );
+
+  await page
+    .getByRole('dialog', { name: '结果导出' })
+    .getByRole('button', { name: '关闭' })
+    .click();
+  const configDownloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: '导出过滤配置' }).click();
+  const configDownload = await configDownloadPromise;
+  expect(configDownload.suggestedFilename()).toMatch(/过滤配置-.*\.json$/);
+  const configPath = await configDownload.path();
+  expect(configPath).not.toBeNull();
+  const configText = await readFile(configPath!, 'utf8');
+  const config = JSON.parse(configText) as {
+    format: string;
+    version: number;
+    exclusions: Record<string, { keywords: string[] }>;
+  };
+  expect(config).toMatchObject({ format: 'jlu-gpa-filter-config', version: 1 });
+  expect(config.exclusions['weighted-average'].keywords).toEqual(['排除']);
+
+  const configChooserPromise = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: '导入过滤配置' }).click();
+  const configChooser = await configChooserPromise;
+  await configChooser.setFiles({
+    name: '过滤配置.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(configText, 'utf8')
+  });
+  await expect(page.getByText('过滤配置已导入并应用')).toBeVisible();
 });
 
 test('imports a synthetic CSV through the right-side preview drawer', async ({ page }) => {
   await page.goto('./');
-  await page.getByRole('button', { name: '导入成绩', exact: true }).click();
+  await page
+    .getByRole('button', { name: /添加课程/ })
+    .first()
+    .click();
+  const addDrawer = page.getByRole('dialog', { name: '添加课程' });
+  await expect(addDrawer.getByText('从成绩表批量添加')).toBeVisible();
+  await addDrawer.getByRole('button', { name: '导入成绩表' }).click();
   await expect(page.getByRole('dialog', { name: '导入成绩表' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '课程清单' })).toBeVisible();
 
@@ -156,16 +231,24 @@ test('imports a synthetic CSV through the right-side preview drawer', async ({ p
   await chooser.setFiles({
     name: '虚构成绩.csv',
     mimeType: 'text/csv',
-    buffer: Buffer.from('课程号,课程名,总成绩,学分\nCSV-001,虚构导入课程,88,3', 'utf8')
+    buffer: Buffer.from('课程号,课程名,总成绩,学分,是否排除\nCSV-001,虚构导入课程,88,3,是', 'utf8')
   });
 
   await expect(page.getByText('可导入')).toBeVisible();
   await expect(page.getByText('虚构成绩.csv')).toBeVisible();
+  await expect(page.getByText('检测到绩点计算器适配表格')).toBeVisible();
+  await expect(
+    page.getByText('确认导入后，将恢复 1 门课程的手动排除状态。', { exact: true })
+  ).toBeVisible();
   await page.getByRole('button', { name: '确认导入' }).click();
   await expect(page.getByText('虚构导入课程')).toBeVisible();
 
   await page.getByRole('button', { name: /开始计算/ }).click();
-  await expect(page.getByRole('button', { name: '加权平均分 88.0000', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '加权平均分 无可计算课程', exact: true })
+  ).toBeVisible();
+  await page.getByRole('button', { name: '加权平均分 无可计算课程', exact: true }).click();
+  await expect(page.getByText('用户手动排除')).toBeVisible();
 });
 
 test('uses an icon rail and keeps horizontal scrolling inside the course table at 390px', async ({
@@ -189,6 +272,8 @@ test('uses an icon rail and keeps horizontal scrolling inside the course table a
   expect(layout.bodyScrollWidth).toBe(layout.bodyClientWidth);
   expect(layout.sidebarWidth).toBe(64);
   expect(layout.tableScrollWidth).toBeGreaterThan(layout.tableClientWidth ?? 0);
+  await expect(page.getByRole('button', { name: '导出过滤配置' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '导入过滤配置' })).toBeVisible();
 
   await page.getByRole('button', { name: '计算规则', exact: true }).click();
   await expect(page.getByText('保研课程排除规则')).toHaveCount(0);

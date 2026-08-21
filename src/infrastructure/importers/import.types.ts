@@ -19,6 +19,7 @@ export type ImportField =
   | 'openingDepartment'
   | 'passed'
   | 'isValid'
+  | 'userExcluded'
   | 'specialReason';
 
 export interface ImportIssue {
@@ -43,6 +44,8 @@ export interface ImportPreview {
   importableCount: number;
   errorCount: number;
   warningCount: number;
+  hasExclusionColumn: boolean;
+  restoredExclusionCount: number;
 }
 
 export type ImportMergeMode = 'replace' | 'append';
@@ -52,4 +55,5 @@ export interface MergeResult {
   addedCount: number;
   replacedCount: number;
   exactDuplicateCount: number;
+  restoredExclusionCount: number;
 }
