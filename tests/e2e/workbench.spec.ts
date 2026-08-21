@@ -28,7 +28,15 @@ test('manual course workflow calculates, switches result views, exports and pers
     .getByRole('button', { name: /添加课程/ })
     .first()
     .click();
-  await expect(page.getByRole('dialog', { name: '添加课程' })).toBeVisible();
+  const addCourseDrawer = page.getByRole('dialog', { name: '添加课程' });
+  await expect(addCourseDrawer).toBeVisible();
+  expect(await addCourseDrawer.evaluate((element) => element.getBoundingClientRect().width)).toBe(
+    620
+  );
+  await addCourseDrawer.getByRole('combobox', { name: /^课程类别/ }).click();
+  await page.getByRole('option', { name: '专业教育课程' }).click();
+  await addCourseDrawer.getByRole('combobox', { name: /^课程性质/ }).click();
+  await page.getByRole('option', { name: '必修课' }).click();
   await page.getByLabel('课程号', { exact: true }).fill('TEST-001');
   await page.getByLabel('课程名', { exact: true }).fill('虚构测试课程');
   await page.getByLabel('百分制成绩', { exact: true }).fill('90');
@@ -280,5 +288,5 @@ test('uses an icon rail and keeps horizontal scrolling inside the course table a
   const drawerWidth = await page
     .getByRole('dialog', { name: '计算规则设置' })
     .evaluate((element) => element.getBoundingClientRect().width);
-  expect(drawerWidth).toBe(390);
+  expect(drawerWidth).toBeCloseTo(390, 3);
 });

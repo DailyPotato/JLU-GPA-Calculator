@@ -42,6 +42,17 @@ interface Props {
   onSave: (course: Course) => Promise<void>;
 }
 
+const courseCategories = ['通识教育课程', '学科基础课程', '专业教育课程', '跨学科拓展课程'];
+const courseNatures = ['必修课', '选修课'];
+
+function selectOptions(values: string[], current?: string) {
+  const options = values.map((value) => ({ label: value, value }));
+  if (current && !values.includes(current)) {
+    options.push({ label: `${current}（现有值）`, value: current });
+  }
+  return options;
+}
+
 function createId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `course-${Date.now()}-${Math.random()}`;
 }
@@ -174,7 +185,7 @@ export function CourseDrawer({
     <Drawer
       open={open}
       title={course ? '编辑课程' : '添加课程'}
-      size={500}
+      size={620}
       className="functional-drawer course-drawer"
       onClose={close}
       destroyOnHidden
@@ -265,10 +276,20 @@ export function CourseDrawer({
           </Form.Item>
         </div>
         <Form.Item label="课程类别" name="courseCategory">
-          <Input />
+          <Select
+            allowClear
+            virtual={false}
+            placeholder="请选择课程类别"
+            options={selectOptions(courseCategories, course?.attributes.courseCategory)}
+          />
         </Form.Item>
         <Form.Item label="课程性质" name="courseNature">
-          <Input />
+          <Select
+            allowClear
+            virtual={false}
+            placeholder="请选择课程性质"
+            options={selectOptions(courseNatures, course?.attributes.courseNature)}
+          />
         </Form.Item>
         <div className="course-switches">
           <Form.Item label="保研课程" name="recommendationIncluded" valuePropName="checked">
