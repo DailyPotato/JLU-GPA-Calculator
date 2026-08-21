@@ -52,17 +52,17 @@
 
 ## 技术栈
 
-| 类别 | 选型 |
-| --- | --- |
-| 框架 | React 19 + TypeScript + Vite 8 |
-| UI | Ant Design 6 + Ant Design Icons |
-| 存储 | Dexie（IndexedDB） |
-| 导入 | SheetJS（xlsx） |
-| 导出 | jspdf（PDF）、html-to-image（PNG）、SheetJS（xlsx） |
-| PWA | vite-plugin-pwa + Workbox |
-| 测试 | Vitest（单元）、Playwright（端到端）、Testing Library |
-| 质量 | ESLint + Prettier |
-| 包管理 | pnpm |
+| 类别   | 选型                                                  |
+| ------ | ----------------------------------------------------- |
+| 框架   | React 19 + TypeScript + Vite 8                        |
+| UI     | Ant Design 6 + Ant Design Icons                       |
+| 存储   | Dexie（IndexedDB）                                    |
+| 导入   | SheetJS（xlsx）                                       |
+| 导出   | jspdf（PDF）、html-to-image（PNG）、SheetJS（xlsx）   |
+| PWA    | vite-plugin-pwa + Workbox                             |
+| 测试   | Vitest（单元）、Playwright（端到端）、Testing Library |
+| 质量   | ESLint + Prettier                                     |
+| 包管理 | pnpm                                                  |
 
 ## 项目结构
 
@@ -86,14 +86,14 @@ pnpm dev
 
 常用脚本：
 
-| 命令 | 说明 |
-| --- | --- |
-| `pnpm dev` | 启动开发服务器 |
-| `pnpm check` | 完整校验：lint + 格式检查 + 单元测试 + 类型检查 + 构建 |
-| `pnpm test` / `pnpm test:watch` | 单元测试（Vitest） |
-| `pnpm test:e2e` | 端到端测试（Playwright） |
-| `pnpm build` | 生产构建 |
-| `pnpm preview` | 预览生产构建 |
+| 命令                            | 说明                                                   |
+| ------------------------------- | ------------------------------------------------------ |
+| `pnpm dev`                      | 启动开发服务器                                         |
+| `pnpm check`                    | 完整校验：lint + 格式检查 + 单元测试 + 类型检查 + 构建 |
+| `pnpm test` / `pnpm test:watch` | 单元测试（Vitest）                                     |
+| `pnpm test:e2e`                 | 端到端测试（Playwright）                               |
+| `pnpm build`                    | 生产构建                                               |
+| `pnpm preview`                  | 预览生产构建                                           |
 
 ## 部署
 
