@@ -289,7 +289,7 @@ function Workbench() {
         }}
         onSave={saveCourse}
       />
-      <AboutDialog open={aboutOpen} rules={rules} onClose={() => setAboutOpen(false)} />
+      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
       <div className="export-host" aria-hidden="true">
         <ResultExportCard
           ref={exportRef}
