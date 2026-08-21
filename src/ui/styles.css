@@ -31,6 +31,18 @@ textarea {
   width: 100%;
 }
 
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 .app-shell {
   display: flex;
   width: 100%;
@@ -63,18 +75,23 @@ textarea {
   margin-bottom: 24px;
 }
 
-.sidebar-brand-mark {
-  display: grid;
+.sidebar-avatar-slot {
+  display: block;
   flex: 0 0 30px;
   width: 30px;
   height: 30px;
-  place-items: center;
-  color: #ffffff;
-  font:
-    700 17px/1 Arial,
-    sans-serif;
-  background: #8f2c3e;
-  border-radius: 5px;
+  overflow: hidden;
+  background: #f7f7f6;
+  border: 1px solid #dfe3e8;
+  border-radius: 6px;
+}
+
+.sidebar-avatar-slot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 48%;
 }
 
 .sidebar-brand-name {
@@ -211,6 +228,39 @@ textarea {
   height: 6px;
   background: #8f2c3e;
   border-radius: 50%;
+}
+
+.sidebar-filter-transfer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  padding-top: 5px;
+}
+
+.filter-transfer-button {
+  display: flex;
+  min-width: 0;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 6px 8px;
+  color: #5d6672;
+  font-size: 12px;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #d9dde3;
+  border-radius: 5px;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.filter-transfer-button:hover {
+  color: #8f2c3e;
+  background: #faf5f6;
+  border-color: #c9a4ab;
 }
 
 .result-summary {
@@ -445,6 +495,46 @@ textarea {
   box-shadow: -4px 0 16px rgba(29, 35, 43, 0.12);
 }
 
+.course-import-entry {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #ead7db;
+  border-radius: 6px;
+  background: #fbf6f7;
+}
+
+.course-import-entry-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  color: #8f2c3e;
+  font-size: 18px;
+  background: #f1e2e5;
+  border-radius: 6px;
+  place-items: center;
+}
+
+.course-import-entry-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.45;
+}
+
+.course-import-entry-copy .ant-typography-secondary {
+  font-size: 12px;
+}
+
+.course-entry-divider.ant-divider {
+  margin: 14px 0 18px;
+  color: #8a929d;
+  font-size: 12px;
+}
+
 .exclusion-drawer-intro {
   display: flex;
   gap: 14px;
@@ -622,6 +712,44 @@ textarea {
   margin-top: 18px;
 }
 
+.adapted-export-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  margin-top: 18px;
+  border: 1px solid #d9e7dd;
+  border-radius: 6px;
+  background: #f5faf6;
+}
+
+.adapted-export-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  color: #39734c;
+  font-size: 18px;
+  background: #e2f0e6;
+  border-radius: 6px;
+  place-items: center;
+}
+
+.adapted-export-copy {
+  min-width: 0;
+}
+
+.adapted-export-copy h4.ant-typography {
+  margin: 0 0 3px;
+  font-size: 15px;
+}
+
+.adapted-export-copy .ant-typography-secondary {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .about-disclaimer {
   margin: 16px 0 0 !important;
   line-height: 1.7;
@@ -778,6 +906,23 @@ textarea {
     display: none;
   }
 
+  .sidebar-filter-transfer {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    padding-top: 3px;
+  }
+
+  .filter-transfer-button {
+    width: 40px;
+    min-height: 34px;
+    padding: 0;
+    font-size: 15px;
+  }
+
+  .filter-transfer-label {
+    display: none;
+  }
+
   .app-main {
     padding: 12px;
   }
@@ -835,6 +980,24 @@ textarea {
 
   .functional-drawer .ant-drawer-body {
     padding: 16px;
+  }
+
+  .course-import-entry {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .course-import-entry .ant-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .adapted-export-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .adapted-export-card .ant-btn {
+    grid-column: 1 / -1;
+    width: 100%;
   }
 
   .exclusion-rule-heading {

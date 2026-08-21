@@ -143,6 +143,14 @@ export function ImportDrawer({ open, existingCourses, onCancel, onCommit }: Prop
         {error && <Alert type="error" showIcon message={error} />}
         {preview && (
           <>
+            {preview.hasExclusionColumn && (
+              <Alert
+                type="info"
+                showIcon
+                message="检测到绩点计算器适配表格"
+                description={`确认导入后，将恢复 ${preview.restoredExclusionCount} 门课程的手动排除状态。`}
+              />
+            )}
             <Descriptions bordered size="small" column={{ xs: 1, sm: 2, md: 3 }}>
               <Descriptions.Item label="工作表">{preview.selectedSheetName}</Descriptions.Item>
               <Descriptions.Item label="数据行">{preview.totalRows}</Descriptions.Item>
@@ -150,7 +158,11 @@ export function ImportDrawer({ open, existingCourses, onCancel, onCommit }: Prop
               <Descriptions.Item label="问题">{preview.errorCount}</Descriptions.Item>
               <Descriptions.Item label="警告">{preview.warningCount}</Descriptions.Item>
               <Descriptions.Item label="表格类型">
-                {preview.source === 'jlu-sheet' ? '吉林大学常见格式' : '通用格式'}
+                {preview.hasExclusionColumn
+                  ? '绩点计算器适配表'
+                  : preview.source === 'jlu-sheet'
+                    ? '吉林大学常见格式'
+                    : '通用格式'}
               </Descriptions.Item>
             </Descriptions>
             {existingCourses.length > 0 && (
@@ -178,6 +190,11 @@ export function ImportDrawer({ open, existingCourses, onCancel, onCommit }: Prop
                 type={mode === 'replace' ? 'warning' : 'success'}
                 showIcon
                 message={`操作后预计 ${estimate.courses.length} 门课程；新增 ${estimate.addedCount} 门；跳过完全重复 ${estimate.exactDuplicateCount} 门${estimate.replacedCount ? `；将替换 ${estimate.replacedCount} 门` : ''}`}
+                description={
+                  estimate.restoredExclusionCount
+                    ? `将恢复 ${estimate.restoredExclusionCount} 门课程的手动排除状态`
+                    : undefined
+                }
               />
             )}
             {preview.issues.length > 0 && (

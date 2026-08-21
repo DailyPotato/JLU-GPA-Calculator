@@ -1,22 +1,39 @@
-import { DownloadOutlined, FileImageOutlined, FilePdfOutlined } from '@ant-design/icons';
+import {
+  DownloadOutlined,
+  FileExcelOutlined,
+  FileImageOutlined,
+  FilePdfOutlined
+} from '@ant-design/icons';
 import { Button, Drawer, Space, Typography } from 'antd';
+import { formatDecimal } from '../../domain/calculation/format-result';
 import type { AllResults } from '../state/app-context';
 
 interface Props {
   open: boolean;
   results: AllResults;
   calculated: boolean;
+  courseCount: number;
   exporting: boolean;
   onClose: () => void;
-  onExport: (format: 'png' | 'pdf') => Promise<void>;
+  onExport: (format: 'png' | 'pdf' | 'xlsx') => Promise<void>;
 }
 
 function value(result: AllResults[keyof AllResults], calculated: boolean): string {
   if (!calculated) return '尚未计算';
-  return result.status === 'success' ? (result.formattedValue ?? '—') : '无可计算课程';
+  return result.status === 'success' && result.value !== undefined
+    ? formatDecimal(result.value, 1)
+    : '无可计算课程';
 }
 
-export function ExportDrawer({ open, results, calculated, exporting, onClose, onExport }: Props) {
+export function ExportDrawer({
+  open,
+  results,
+  calculated,
+  courseCount,
+  exporting,
+  onClose,
+  onExport
+}: Props) {
   const items = [
     { label: '保研 GPA', result: results.recommendationGpa },
     { label: '加权平均分', result: results.weightedAverage },
@@ -37,7 +54,7 @@ export function ExportDrawer({ open, results, calculated, exporting, onClose, on
           <DownloadOutlined />
           <div>
             <Typography.Title level={3}>成绩核算结果</Typography.Title>
-            <Typography.Text type="secondary">所有数值统一保留四位小数</Typography.Text>
+            <Typography.Text type="secondary">导出数值统一保留一位小数</Typography.Text>
           </div>
         </div>
         <div className="export-preview-results">
@@ -50,6 +67,27 @@ export function ExportDrawer({ open, results, calculated, exporting, onClose, on
           ))}
         </div>
       </div>
+      <section className="adapted-export-card" aria-labelledby="adapted-export-title">
+        <span className="adapted-export-icon" aria-hidden="true">
+          <FileExcelOutlined />
+        </span>
+        <div className="adapted-export-copy">
+          <Typography.Title id="adapted-export-title" level={4}>
+            课程适配表格
+          </Typography.Title>
+          <Typography.Text type="secondary">
+            导出当前课程；任一计算中的手动或规则排除会写入“是否排除”列，并可再次导入恢复。
+          </Typography.Text>
+        </div>
+        <Button
+          icon={<FileExcelOutlined />}
+          disabled={courseCount === 0}
+          loading={exporting}
+          onClick={() => void onExport('xlsx')}
+        >
+          导出适配表格
+        </Button>
+      </section>
       <Space orientation="vertical" className="export-actions">
         <Button
           block

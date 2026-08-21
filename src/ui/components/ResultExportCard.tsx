@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import { formatDecimal } from '../../domain/calculation/format-result';
 import type { AllResults } from '../state/app-context';
 import type { AppRuleSet } from '../../domain/rules/rule-set.types';
 
@@ -9,7 +10,9 @@ interface Props {
 }
 
 function value(result: AllResults[keyof AllResults]): string {
-  return result.status === 'success' ? (result.formattedValue ?? '—') : '无可计算课程';
+  return result.status === 'success' && result.value !== undefined
+    ? formatDecimal(result.value, 1)
+    : '无可计算课程';
 }
 
 export const ResultExportCard = forwardRef<HTMLDivElement, Props>(function ResultExportCard(
@@ -17,7 +20,7 @@ export const ResultExportCard = forwardRef<HTMLDivElement, Props>(function Resul
   ref
 ) {
   const levelText = Object.entries(rules.gradePoint.levelScores)
-    .map(([level, score]) => `${level} ${score}`)
+    .map(([level, score]) => `${level} ${formatDecimal(score, 1)}`)
     .join('，');
   return (
     <div ref={ref} className="export-card">

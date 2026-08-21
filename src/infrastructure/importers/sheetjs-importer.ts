@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { courseSchema } from '../../domain/course/course.schema';
-import type { Course } from '../../domain/course/course.types';
+import type { Course, CourseSource } from '../../domain/course/course.types';
 import {
   normalizeText,
   parseBoolean,
@@ -31,6 +31,7 @@ const fieldAliases: Record<ImportField, string[]> = {
   openingDepartment: ['开课单位', '开课院系'],
   passed: ['是否及格'],
   isValid: ['是否有效'],
+  userExcluded: ['是否排除', '排除状态', '手动排除'],
   specialReason: ['特殊原因']
 };
 
@@ -97,11 +98,19 @@ function parseOptionalNumber(value: unknown, fieldLabel: string): number | undef
   return parsed;
 }
 
+function parseOptionalBoolean(value: unknown, fieldLabel: string): boolean | undefined {
+  const text = normalizeText(value);
+  if (!text) return undefined;
+  const parsed = parseBoolean(value);
+  if (parsed === undefined) throw new Error(`${fieldLabel}只能填写“是”或“否”`);
+  return parsed;
+}
+
 function rowToCourse(
   row: Record<string, unknown>,
   mapping: Partial<Record<ImportField, string>>,
   context: {
-    source: 'jlu-sheet' | 'generic-sheet';
+    source: CourseSource;
     fileName: string;
     sheetName: string;
     rowNumber: number;
@@ -119,6 +128,7 @@ function rowToCourse(
   if (!Number.isFinite(credit) || credit <= 0) throw new Error('学分必须为大于 0 的有限数');
 
   const isValid = parseBoolean(valueFor(row, mapping, 'isValid')) ?? true;
+  const userExcluded = parseOptionalBoolean(valueFor(row, mapping, 'userExcluded'), '是否排除');
   const rawTerm = normalizeText(valueFor(row, mapping, 'academicTerm'));
   const importedGradePoint = parseOptionalNumber(
     valueFor(row, mapping, 'importedGradePoint'),
@@ -156,7 +166,7 @@ function rowToCourse(
       specialReason: optionalText(valueFor(row, mapping, 'specialReason'))
     },
     control: {
-      userIncluded: isValid,
+      userIncluded: mapping.userExcluded ? !userExcluded : isValid,
       recommendationOverride: 'auto'
     },
     provenance: {
@@ -250,7 +260,7 @@ export function parseSpreadsheetBuffer(
       try {
         courses.push(
           rowToCourse(row, mapping, {
-            source,
+            source: mapping.userExcluded ? 'backup' : source,
             fileName,
             sheetName,
             rowNumber: index + 2,
@@ -281,7 +291,13 @@ export function parseSpreadsheetBuffer(
     issues,
     importableCount: courses.length,
     errorCount: issues.filter((issue) => issue.severity === 'error').length,
-    warningCount: issues.filter((issue) => issue.severity === 'warning').length
+    warningCount: issues.filter((issue) => issue.severity === 'warning').length,
+    hasExclusionColumn: Boolean(mapping.userExcluded),
+    restoredExclusionCount: mapping.userExcluded
+      ? courses.filter(
+          (course) => parseBoolean(course.provenance.rawFields?.[mapping.userExcluded!]) === true
+        ).length
+      : 0
   };
 }
 

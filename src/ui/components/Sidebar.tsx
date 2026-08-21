@@ -1,19 +1,21 @@
 import {
   BookOutlined,
   CalculatorOutlined,
+  DownloadOutlined,
   ExportOutlined,
-  FileAddOutlined,
   FilterOutlined,
   InfoCircleOutlined,
-  SettingOutlined
+  SettingOutlined,
+  UploadOutlined
 } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
+import { useRef } from 'react';
 import type { ResultKind } from '../../domain/course/course.types';
 import type { AppRuleSet } from '../../domain/rules/rule-set.types';
 import type { AllResults } from '../state/app-context';
 import { ResultSummary } from './ResultSummary';
 
-export type PanelKind = 'import' | 'rules' | 'export';
+export type PanelKind = 'rules' | 'export';
 
 interface Props {
   activePanel?: PanelKind;
@@ -28,12 +30,13 @@ interface Props {
   onCalculate: () => void;
   onResult: (kind: ResultKind) => void;
   onExclusionRules: (kind: ResultKind) => void;
+  onExportFilterConfig: () => void;
+  onImportFilterConfig: (file: File) => Promise<void>;
   onAbout: () => void;
 }
 
 const navItems = [
   { key: 'courses', label: '课程', icon: <BookOutlined /> },
-  { key: 'import', label: '导入成绩', icon: <FileAddOutlined /> },
   { key: 'rules', label: '计算规则', icon: <SettingOutlined /> },
   { key: 'export', label: '结果导出', icon: <ExportOutlined /> }
 ] as const;
@@ -51,8 +54,11 @@ export function Sidebar({
   onCalculate,
   onResult,
   onExclusionRules,
+  onExportFilterConfig,
+  onImportFilterConfig,
   onAbout
 }: Props) {
+  const filterConfigInputRef = useRef<HTMLInputElement>(null);
   const resultItems = [
     results.recommendationGpa,
     results.weightedAverage,
@@ -62,7 +68,9 @@ export function Sidebar({
   return (
     <aside className="app-sidebar" aria-label="功能栏">
       <div className="sidebar-brand" aria-label="JLU GPA">
-        <span className="sidebar-brand-mark">J</span>
+        <span className="sidebar-avatar-slot" aria-hidden="true">
+          <img src={`${import.meta.env.BASE_URL}headshot.jpg`} alt="" />
+        </span>
         <span className="sidebar-brand-name">JLU GPA</span>
       </div>
 
@@ -139,6 +147,43 @@ export function Sidebar({
             </div>
           );
         })}
+        <div className="sidebar-filter-transfer" aria-label="过滤配置管理">
+          <Tooltip title="导出过滤配置" placement="right">
+            <button
+              type="button"
+              className="filter-transfer-button"
+              aria-label="导出过滤配置"
+              onClick={onExportFilterConfig}
+            >
+              <DownloadOutlined />
+              <span className="filter-transfer-label">导出过滤配置</span>
+            </button>
+          </Tooltip>
+          <Tooltip title="导入过滤配置" placement="right">
+            <button
+              type="button"
+              className="filter-transfer-button"
+              aria-label="导入过滤配置"
+              onClick={() => filterConfigInputRef.current?.click()}
+            >
+              <UploadOutlined />
+              <span className="filter-transfer-label">导入过滤配置</span>
+            </button>
+          </Tooltip>
+          <input
+            ref={filterConfigInputRef}
+            className="visually-hidden"
+            type="file"
+            accept="application/json,.json"
+            aria-hidden="true"
+            tabIndex={-1}
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (file) void onImportFilterConfig(file);
+              event.currentTarget.value = '';
+            }}
+          />
+        </div>
       </section>
 
       <div className="sidebar-footer">

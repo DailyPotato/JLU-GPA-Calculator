@@ -26,4 +26,28 @@ describe('course import merge', () => {
     expect(result.exactDuplicateCount).toBe(1);
     expect(result.courses.map((course) => course.id)).toEqual(['1', '3']);
   });
+
+  it('restores exclusion state onto an exact duplicate from an adapted workbook', () => {
+    const existing = makeCourse('existing', 80, 2, {
+      identity: { code: 'A', name: '课程' },
+      term: { semester: 'spring', rawText: '2025-2026-2' }
+    });
+    const backup = makeCourse('backup', 80, 2, {
+      identity: { code: 'A', name: '课程' },
+      term: { semester: 'spring', rawText: '2025-2026-2' },
+      control: { userIncluded: false, recommendationOverride: 'auto' },
+      provenance: { source: 'backup' }
+    });
+
+    const result = mergeCourses([existing], [backup], 'append');
+
+    expect(result).toMatchObject({
+      addedCount: 0,
+      exactDuplicateCount: 1,
+      restoredExclusionCount: 1
+    });
+    expect(result.courses).toHaveLength(1);
+    expect(result.courses[0].id).toBe('existing');
+    expect(result.courses[0].control.userIncluded).toBe(false);
+  });
 });

@@ -3,6 +3,7 @@ import { App, Button, Dropdown, Switch, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Course, CourseEvaluation } from '../../domain/course/course.types';
 import { getEffectiveScore, resolveGradePoint } from '../../domain/course/course.normalizer';
+import { formatDecimal } from '../../domain/calculation/format-result';
 import type { AppRuleSet } from '../../domain/rules/rule-set.types';
 
 export interface CourseLedgerRow {
@@ -22,13 +23,13 @@ interface Props {
 
 function gradeText(course: Course): string {
   const grade = course.achievement.grade;
-  return grade.kind === 'percentage' ? String(grade.raw) : grade.raw;
+  return grade.kind === 'percentage' ? formatDecimal(grade.raw, 1) : grade.raw;
 }
 
 function gradePointText(course: Course, rules: AppRuleSet): string {
   try {
     const score = getEffectiveScore(course.achievement.grade, rules.gradePoint);
-    return resolveGradePoint(course, score, rules.gradePoint).value.toFixed(4);
+    return formatDecimal(resolveGradePoint(course, score, rules.gradePoint).value, 1);
   } catch {
     return '—';
   }
@@ -85,7 +86,9 @@ export function CourseLedger({
       title: '学分',
       key: 'credit',
       width: 90,
-      render: (_, row) => <span className="numeric-cell">{row.course.achievement.credit}</span>
+      render: (_, row) => (
+        <span className="numeric-cell">{formatDecimal(row.course.achievement.credit, 1)}</span>
+      )
     },
     {
       title: '绩点',

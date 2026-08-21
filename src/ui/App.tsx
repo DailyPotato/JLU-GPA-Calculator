@@ -2,7 +2,9 @@ import { App as AntApp, ConfigProvider, theme } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Course, ResultKind } from '../domain/course/course.types';
+import { exportAdaptedCourseWorkbook } from '../infrastructure/exporters/course-workbook-exporter';
 import { exportResultPdf, exportResultPng } from '../infrastructure/exporters/result-exporter';
+import { downloadFilterConfig, parseFilterConfigFile } from '../infrastructure/filter-config';
 import { AboutDialog } from './components/AboutDialog';
 import { AppShell } from './components/AppShell';
 import { CourseDrawer } from './components/CourseDrawer';
@@ -37,6 +39,7 @@ function Workbench() {
     saveRules
   } = useAppState();
   const [activePanel, setActivePanel] = useState<PanelKind>();
+  const [importOpen, setImportOpen] = useState(false);
   const [exclusionKind, setExclusionKind] = useState<ResultKind>();
   const [aboutOpen, setAboutOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -63,21 +66,28 @@ function Workbench() {
 
   const edit = (course?: Course) => {
     setActivePanel(undefined);
+    setImportOpen(false);
     setEditingCourse(course);
     setEditorOpen(true);
   };
 
-  const exportResult = async (format: 'png' | 'pdf') => {
-    if (!exportRef.current) return;
+  const exportResult = async (format: 'png' | 'pdf' | 'xlsx') => {
+    if (format !== 'xlsx' && !exportRef.current) return;
     setExporting(true);
     setGeneratedAt(new Date());
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     );
     try {
-      if (format === 'png') await exportResultPng(exportRef.current);
-      else await exportResultPdf(exportRef.current);
-      app.message.success(`已导出 ${format.toUpperCase()}`);
+      if (format === 'xlsx') {
+        await exportAdaptedCourseWorkbook(courses, [
+          results.recommendationGpa,
+          results.weightedAverage,
+          results.arithmeticAverage
+        ]);
+      } else if (format === 'png') await exportResultPng(exportRef.current!);
+      else await exportResultPdf(exportRef.current!);
+      app.message.success(format === 'xlsx' ? '已导出适配表格' : `已导出 ${format.toUpperCase()}`);
     } catch (error) {
       app.message.error(error instanceof Error ? error.message : '导出失败');
     } finally {
@@ -121,6 +131,7 @@ function Workbench() {
         try {
           await clearCourses();
           setActivePanel(undefined);
+          setImportOpen(false);
           setEditorOpen(false);
           setEditingCourse(undefined);
           setWorkspaceVersion((version) => version + 1);
@@ -146,22 +157,43 @@ function Workbench() {
           exclusions={rules.exclusions}
           onCourses={() => {
             setActivePanel(undefined);
+            setImportOpen(false);
             setExclusionKind(undefined);
             selectResultKind(undefined);
           }}
           onPanel={(panel) => {
             setExclusionKind(undefined);
+            setImportOpen(false);
             setActivePanel(panel);
           }}
           onCalculate={startCalculation}
           onResult={(kind: ResultKind) => {
             setActivePanel(undefined);
+            setImportOpen(false);
             setExclusionKind(undefined);
             selectResultKind(kind);
           }}
           onExclusionRules={(kind) => {
             setActivePanel(undefined);
+            setImportOpen(false);
             setExclusionKind(kind);
+          }}
+          onExportFilterConfig={() => {
+            try {
+              downloadFilterConfig(rules.exclusions);
+              app.message.success('过滤配置已导出');
+            } catch (error) {
+              app.message.error(error instanceof Error ? error.message : '过滤配置导出失败');
+            }
+          }}
+          onImportFilterConfig={async (file) => {
+            try {
+              const exclusions = await parseFilterConfigFile(file);
+              await saveRules({ ...rules, exclusions });
+              app.message.success('过滤配置已导入并应用');
+            } catch (error) {
+              app.message.error(error instanceof Error ? error.message : '过滤配置导入失败');
+            }
           }}
           onAbout={() => setAboutOpen(true)}
         />
@@ -189,14 +221,16 @@ function Workbench() {
         onRecommendationChange={setRecommendation}
       />
 
-      {activePanel === 'import' && (
+      {importOpen && (
         <ImportDrawer
           open
           existingCourses={courses}
-          onCancel={() => setActivePanel(undefined)}
+          onCancel={() => setImportOpen(false)}
           onCommit={async (incoming, mode) => {
             const merged = await importCourses(incoming, mode);
-            app.message.success(`已导入，当前共 ${merged.courses.length} 门课程`);
+            app.message.success(
+              `已导入，当前共 ${merged.courses.length} 门课程${merged.restoredExclusionCount ? `，恢复 ${merged.restoredExclusionCount} 门排除状态` : ''}`
+            );
             return merged;
           }}
         />
@@ -217,6 +251,7 @@ function Workbench() {
           open
           results={results}
           calculated={hasCalculated}
+          courseCount={courses.length}
           exporting={exporting}
           onClose={() => setActivePanel(undefined)}
           onExport={exportResult}
@@ -246,6 +281,11 @@ function Workbench() {
         onClose={() => {
           setEditorOpen(false);
           setEditingCourse(undefined);
+        }}
+        onImport={() => {
+          setEditorOpen(false);
+          setEditingCourse(undefined);
+          setImportOpen(true);
         }}
         onSave={saveCourse}
       />

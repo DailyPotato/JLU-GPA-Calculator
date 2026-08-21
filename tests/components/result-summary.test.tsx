@@ -7,7 +7,7 @@ const success: CalculationResult = {
   kind: 'weighted-average',
   status: 'success',
   value: 90,
-  formattedValue: '90.0000',
+  formattedValue: '90.00',
   includedCourseIds: ['1'],
   excludedCourseIds: [],
   courseCount: 1,
@@ -26,14 +26,14 @@ describe('ResultSummary', () => {
       />
     );
     expect(screen.getByText('尚未计算')).toBeInTheDocument();
-    expect(screen.queryByText('90.0000')).not.toBeInTheDocument();
+    expect(screen.queryByText('90.00')).not.toBeInTheDocument();
   });
 
-  it('shows four decimals and opens details after calculation', () => {
+  it('shows two decimals and opens details after calculation', () => {
     const onClick = vi.fn();
     render(<ResultSummary result={success} active={false} calculated onSelect={onClick} />);
     fireEvent.click(screen.getByRole('button'));
-    expect(screen.getByText('90.0000')).toBeInTheDocument();
+    expect(screen.getByText('90.00')).toBeInTheDocument();
     expect(onClick).toHaveBeenCalledOnce();
   });
 });
