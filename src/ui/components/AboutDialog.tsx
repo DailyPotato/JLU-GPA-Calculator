@@ -1,27 +1,36 @@
 import { Descriptions, Modal, Typography } from 'antd';
-import type { AppRuleSet } from '../../domain/rules/rule-set.types';
 
 interface Props {
   open: boolean;
-  rules: AppRuleSet;
   onClose: () => void;
 }
 
-export function AboutDialog({ open, rules, onClose }: Props) {
+export function AboutDialog({ open, onClose }: Props) {
   return (
     <Modal open={open} title="关于 JLU GPA" footer={null} width={560} onCancel={onClose}>
       <Typography.Paragraph>
-        面向吉林大学本科生的本地成绩核算工具，可计算保研 GPA、加权平均分和算术平均分。
+        面向吉林大学本科生的本地优先绩点核算工具，成绩只在浏览器中处理，可计算保研
+        GPA、加权平均分和算术平均分。
       </Typography.Paragraph>
       <Descriptions column={1} size="small" bordered>
-        <Descriptions.Item label="当前规则">{rules.name}</Descriptions.Item>
-        <Descriptions.Item label="规则版本">{rules.version}</Descriptions.Item>
-        <Descriptions.Item label="数据存储">
-          课程和设置保存在当前浏览器的 IndexedDB 中，成绩文件不会上传服务器。
+        <Descriptions.Item label="版本">正式版 v1.0.0</Descriptions.Item>
+        <Descriptions.Item label="项目地址">
+          <Typography.Link
+            href="https://github.com/DailyPotato/JLU-GPA-Calculator"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            https://github.com/DailyPotato/JLU-GPA-Calculator
+          </Typography.Link>
+        </Descriptions.Item>
+        <Descriptions.Item label="作者">DailyPotato</Descriptions.Item>
+        <Descriptions.Item label="共同作者">Coldymemos</Descriptions.Item>
+        <Descriptions.Item label="开源与使用">
+          本项目开源（MIT License），仅供学习与个人使用，请勿用于商业用途。
         </Descriptions.Item>
       </Descriptions>
       <Typography.Paragraph type="secondary" className="about-disclaimer">
-        本项目不是吉林大学官方系统。不同学院、专业和年份的具体要求可能不同，请以适用于本人的正式文件为准。
+        普瑞赛斯正在看着你哦
       </Typography.Paragraph>
     </Modal>
   );
