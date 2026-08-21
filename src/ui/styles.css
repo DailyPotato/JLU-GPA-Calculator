@@ -612,6 +612,10 @@ textarea {
   border-radius: 5px;
 }
 
+.course-switches .ant-form-item-label > label {
+  white-space: nowrap;
+}
+
 .import-mode {
   display: flex;
   flex-direction: column;
