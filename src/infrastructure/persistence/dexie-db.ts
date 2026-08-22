@@ -52,6 +52,15 @@ export class JluGpaDatabase extends Dexie {
     });
   }
 
+  async hasAnyData(): Promise<boolean> {
+    const [courseCount, ruleSetCount, settingCount] = await Promise.all([
+      this.courses.count(),
+      this.ruleSets.count(),
+      this.settings.count()
+    ]);
+    return courseCount > 0 || ruleSetCount > 0 || settingCount > 0;
+  }
+
   async loadCourses(): Promise<Course[]> {
     return this.courses.toArray();
   }

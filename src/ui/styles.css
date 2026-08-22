@@ -761,6 +761,10 @@ textarea {
   line-height: 1.5;
 }
 
+.about-privacy-alert {
+  margin-bottom: 12px;
+}
+
 .about-disclaimer {
   margin: 16px 0 0 !important;
   line-height: 1.7;

@@ -56,4 +56,15 @@ describe('JluGpaDatabase', () => {
     expect(await database.loadRuleSet(defaultRuleSet.id)).toEqual(defaultRuleSet);
     expect(await database.loadSetting('active-rule-set')).toEqual(defaultRuleSet);
   });
+
+  it('reports whether any local data exists and treats cleared data as a fresh start', async () => {
+    const database = createDatabase();
+    expect(await database.hasAnyData()).toBe(false);
+
+    await database.saveCourse(makeCourse('1', 92, 3));
+    expect(await database.hasAnyData()).toBe(true);
+
+    await database.clearAllData();
+    expect(await database.hasAnyData()).toBe(false);
+  });
 });

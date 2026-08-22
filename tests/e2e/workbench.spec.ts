@@ -1,12 +1,22 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { Buffer } from 'node:buffer';
 import { readFile } from 'node:fs/promises';
 import * as XLSX from 'xlsx';
 
+/** 打开应用；首次访问（本地无缓存数据）会强制展示「关于」对话框，先关闭它再继续操作。 */
+async function openApp(page: Page, viewport?: { width: number; height: number }) {
+  if (viewport) await page.setViewportSize(viewport);
+  await page.goto('./');
+  const aboutDialog = page.getByRole('dialog', { name: '关于 JLU GPA' });
+  await expect(aboutDialog).toBeVisible();
+  await aboutDialog.locator('.ant-modal-close').click();
+  await expect(aboutDialog).toBeHidden();
+}
+
 test('manual course workflow calculates, switches result views, exports and persists', async ({
   page
 }) => {
-  await page.goto('./');
+  await openApp(page);
   await expect(page.getByRole('complementary', { name: '功能栏' })).toBeVisible();
   await expect(page.locator('.sidebar-avatar-slot')).toHaveCount(1);
   await expect(page.locator('.sidebar-avatar-slot img')).toHaveAttribute('src', /headshot\.jpg$/);
@@ -123,7 +133,7 @@ test('manual course workflow calculates, switches result views, exports and pers
 test('configures independent result exclusions and synchronizes them to one result', async ({
   page
 }) => {
-  await page.goto('./');
+  await openApp(page);
   await page
     .getByRole('button', { name: /添加课程/ })
     .first()
@@ -222,7 +232,7 @@ test('configures independent result exclusions and synchronizes them to one resu
 });
 
 test('imports a synthetic CSV through the right-side preview drawer', async ({ page }) => {
-  await page.goto('./');
+  await openApp(page);
   await page
     .getByRole('button', { name: /添加课程/ })
     .first()
@@ -259,34 +269,53 @@ test('imports a synthetic CSV through the right-side preview drawer', async ({ p
   await expect(page.getByText('用户手动排除')).toBeVisible();
 });
 
-test('uses an icon rail and keeps horizontal scrolling inside the course table at 390px', async ({
-  page
-}) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('./');
+test('uses hamburger drawer sidebar and course cards at 390px', async ({ page }) => {
+  await openApp(page, { width: 390, height: 844 });
 
+  // 桌面内嵌侧边栏在手机宽度下隐藏，页面无横向溢出
   const layout = await page.evaluate(() => {
-    const sidebar = document.querySelector<HTMLElement>('.app-sidebar');
-    const table = document.querySelector<HTMLElement>('.ant-table-content');
+    const inlineSidebar = document.querySelector<HTMLElement>('.app-shell > .app-sidebar');
     return {
       bodyClientWidth: document.body.clientWidth,
       bodyScrollWidth: document.body.scrollWidth,
-      sidebarWidth: sidebar?.getBoundingClientRect().width,
-      tableClientWidth: table?.clientWidth,
-      tableScrollWidth: table?.scrollWidth
+      inlineSidebarWidth: inlineSidebar?.getBoundingClientRect().width
     };
   });
-
   expect(layout.bodyScrollWidth).toBe(layout.bodyClientWidth);
-  expect(layout.sidebarWidth).toBe(64);
-  expect(layout.tableScrollWidth).toBeGreaterThan(layout.tableClientWidth ?? 0);
+  expect(layout.inlineSidebarWidth).toBe(0);
+  await expect(page.getByRole('button', { name: '打开菜单' })).toBeVisible();
+
+  // 汉堡抽屉内是完整侧边栏，功能按钮全部可见
+  await page.getByRole('button', { name: '打开菜单' }).click();
   await expect(page.getByRole('button', { name: '导出过滤配置' })).toBeVisible();
   await expect(page.getByRole('button', { name: '导入过滤配置' })).toBeVisible();
 
+  // 从抽屉进入计算规则，抽屉全宽 390px
   await page.getByRole('button', { name: '计算规则', exact: true }).click();
   await expect(page.getByText('保研课程排除规则')).toHaveCount(0);
   const drawerWidth = await page
     .getByRole('dialog', { name: '计算规则设置' })
     .evaluate((element) => element.getBoundingClientRect().width);
   expect(drawerWidth).toBeCloseTo(390, 3);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: '计算规则设置' })).toBeHidden();
+
+  // 手机端课程以卡片列表展示
+  await page
+    .getByRole('button', { name: /添加课程/ })
+    .first()
+    .click();
+  const addCourseDrawer = page.getByRole('dialog', { name: '添加课程' });
+  await addCourseDrawer.getByLabel('课程号', { exact: true }).fill('MOBILE-001');
+  await addCourseDrawer.getByLabel('课程名', { exact: true }).fill('移动端测试课程');
+  await addCourseDrawer.getByLabel('百分制成绩', { exact: true }).fill('90');
+  await addCourseDrawer.getByLabel('学分', { exact: true }).fill('2');
+  await addCourseDrawer.getByRole('button', { name: '保存课程' }).click();
+
+  const card = page.locator('.course-card', { hasText: '移动端测试课程' });
+  await expect(card).toBeVisible();
+  await expect(card).toContainText('90');
+  await expect(card).toContainText('2');
+  await expect(card).toContainText('4.0');
+  await expect(card.getByRole('switch', { name: '移动端测试课程保研课程' })).toBeChecked();
 });
