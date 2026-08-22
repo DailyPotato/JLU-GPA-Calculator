@@ -148,7 +148,7 @@ export function Sidebar({
           );
         })}
         <div className="sidebar-filter-transfer" aria-label="过滤配置管理">
-          <Tooltip title="导出过滤配置" placement="right">
+          <Tooltip title="导出过滤配置" placement="top">
             <button
               type="button"
               className="filter-transfer-button"
@@ -159,7 +159,7 @@ export function Sidebar({
               <span className="filter-transfer-label">导出过滤配置</span>
             </button>
           </Tooltip>
-          <Tooltip title="导入过滤配置" placement="right">
+          <Tooltip title="导入过滤配置" placement="top">
             <button
               type="button"
               className="filter-transfer-button"
