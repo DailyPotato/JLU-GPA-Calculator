@@ -1,6 +1,7 @@
 # 吉林大学本科绩点计算器（JLU GPA Calculator）
 
 > 作者：DailyPotato · 共同作者：Coldymemos
+> 版本：v1.0.1
 >
 > @Coldymemos：PRTS感谢大家的支持，使用过程中有需要优化的问题请及时联系哦。
 

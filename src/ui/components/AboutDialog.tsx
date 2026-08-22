@@ -28,7 +28,7 @@ export function AboutDialog({ open, onClose, onResetAll }: Props) {
         GPA、加权平均分和算术平均分。
       </Typography.Paragraph>
       <Descriptions column={1} size="small" bordered>
-        <Descriptions.Item label="版本">正式版 v1.0.0</Descriptions.Item>
+        <Descriptions.Item label="版本">正式版 v1.0.1</Descriptions.Item>
         <Descriptions.Item label="项目地址">
           <Typography.Link
             href="https://github.com/DailyPotato/JLU-GPA-Calculator"
