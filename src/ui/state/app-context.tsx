@@ -12,13 +12,14 @@ interface AppState {
   courses: Course[];
   rules: AppRuleSet;
   ready: boolean;
+  firstVisit: boolean;
   hasCalculated: boolean;
   selectedResultKind?: ResultKind;
   persistenceError?: string;
 }
 
 type Action =
-  | { type: 'HYDRATE'; courses: Course[]; rules: AppRuleSet }
+  | { type: 'HYDRATE'; courses: Course[]; rules: AppRuleSet; firstVisit: boolean }
   | { type: 'SET_COURSES'; courses: Course[] }
   | { type: 'CLEAR_COURSES' }
   | { type: 'RESET' }
@@ -30,7 +31,13 @@ type Action =
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'HYDRATE':
-      return { ...state, courses: action.courses, rules: action.rules, ready: true };
+      return {
+        ...state,
+        courses: action.courses,
+        rules: action.rules,
+        ready: true,
+        firstVisit: action.firstVisit
+      };
     case 'SET_COURSES':
       return { ...state, courses: action.courses };
     case 'CLEAR_COURSES':
@@ -45,6 +52,7 @@ function reducer(state: AppState, action: Action): AppState {
         courses: [],
         rules: structuredClone(defaultRuleSet),
         ready: true,
+        firstVisit: false,
         hasCalculated: false,
         selectedResultKind: undefined
       };
@@ -73,6 +81,7 @@ interface AppContextValue extends AppState {
   deleteCourse: (id: string) => Promise<void>;
   clearCourses: () => Promise<void>;
   resetAllData: () => Promise<void>;
+  acknowledgeWelcome: () => Promise<void>;
   importCourses: (incoming: Course[], mode: ImportMergeMode) => Promise<MergeResult>;
   saveRules: (rules: AppRuleSet) => Promise<void>;
 }
@@ -83,6 +92,7 @@ const initialState: AppState = {
   courses: [],
   rules: structuredClone(defaultRuleSet),
   ready: false,
+  firstVisit: false,
   hasCalculated: false
 };
 
@@ -91,18 +101,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    Promise.all([database.loadCourses(), database.loadSetting<AppRuleSet>('active-rule-set')])
-      .then(([courses, savedRules]) => {
+    Promise.all([
+      database.loadCourses(),
+      database.loadSetting<AppRuleSet>('active-rule-set'),
+      database.hasAnyData()
+    ])
+      .then(([courses, savedRules, hasData]) => {
         if (active)
           dispatch({
             type: 'HYDRATE',
             courses,
-            rules: normalizeAppRuleSet(savedRules ?? structuredClone(defaultRuleSet))
+            rules: normalizeAppRuleSet(savedRules ?? structuredClone(defaultRuleSet)),
+            firstVisit: !hasData
           });
       })
       .catch((error: unknown) => {
         if (!active) return;
-        dispatch({ type: 'HYDRATE', courses: [], rules: structuredClone(defaultRuleSet) });
+        dispatch({
+          type: 'HYDRATE',
+          courses: [],
+          rules: structuredClone(defaultRuleSet),
+          firstVisit: false
+        });
         dispatch({
           type: 'SET_ERROR',
           message: error instanceof Error ? error.message : '无法读取浏览器本地数据'
@@ -167,6 +187,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [withPersistenceError]
   );
 
+  const acknowledgeWelcome = useCallback(
+    async () =>
+      withPersistenceError(async () => {
+        await database.saveSetting('welcome-about-shown', true);
+      }),
+    [withPersistenceError]
+  );
+
   const importCourses = useCallback(
     async (incoming: Course[], mode: ImportMergeMode) =>
       withPersistenceError(async () => {
@@ -203,10 +231,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       deleteCourse,
       clearCourses,
       resetAllData,
+      acknowledgeWelcome,
       importCourses,
       saveRules
     }),
-    [state, results, saveCourse, deleteCourse, clearCourses, resetAllData, importCourses, saveRules]
+    [
+      state,
+      results,
+      saveCourse,
+      deleteCourse,
+      clearCourses,
+      resetAllData,
+      acknowledgeWelcome,
+      importCourses,
+      saveRules
+    ]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

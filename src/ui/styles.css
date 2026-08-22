@@ -47,8 +47,13 @@ textarea {
   display: flex;
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: #f5f6f7;
+}
+
+.app-mobile-header {
+  display: none;
 }
 
 .app-sidebar {
@@ -60,6 +65,7 @@ textarea {
   width: clamp(280px, 30vw, 380px);
   min-width: 280px;
   height: 100vh;
+  height: 100dvh;
   padding: 22px 18px 16px;
   overflow-y: auto;
   background: #ffffff;
@@ -326,6 +332,7 @@ textarea {
   flex: 1 1 auto;
   min-width: 0;
   height: 100vh;
+  height: 100dvh;
   padding: 22px;
   overflow: auto;
 }
@@ -754,6 +761,10 @@ textarea {
   line-height: 1.5;
 }
 
+.about-privacy-alert {
+  margin-bottom: 12px;
+}
+
 .about-disclaimer {
   margin: 16px 0 0 !important;
   line-height: 1.7;
@@ -844,7 +855,7 @@ textarea {
 }
 
 @media (max-width: 900px) {
-  .app-sidebar {
+  .app-shell > .app-sidebar {
     flex-basis: 64px;
     width: 64px;
     min-width: 64px;
@@ -853,47 +864,47 @@ textarea {
     overflow-y: auto;
   }
 
-  .sidebar-brand {
+  .app-shell > .app-sidebar .sidebar-brand {
     justify-content: center;
     height: 38px;
     padding: 0;
     margin-bottom: 18px;
   }
 
-  .sidebar-brand-name,
-  .nav-label,
-  .calculate-label,
-  .sidebar-results h2,
-  .result-summary-label {
+  .app-shell > .app-sidebar .sidebar-brand-name,
+  .app-shell > .app-sidebar .nav-label,
+  .app-shell > .app-sidebar .calculate-label,
+  .app-shell > .app-sidebar .sidebar-results h2,
+  .app-shell > .app-sidebar .result-summary-label {
     display: none;
   }
 
-  .nav-item {
+  .app-shell > .app-sidebar .nav-item {
     justify-content: center;
     padding: 0;
   }
 
-  .nav-item-active::before {
+  .app-shell > .app-sidebar .nav-item-active::before {
     left: -8px;
   }
 
-  .sidebar-calculate .ant-btn {
+  .app-shell > .app-sidebar .sidebar-calculate .ant-btn {
     width: 40px;
     padding-inline: 0;
   }
 
-  .sidebar-results {
+  .app-shell > .app-sidebar .sidebar-results {
     min-height: 235px;
   }
 
-  .result-summary {
+  .app-shell > .app-sidebar .result-summary {
     display: flex;
     min-height: 48px;
     justify-content: center;
     padding: 5px 2px;
   }
 
-  .result-summary-value {
+  .app-shell > .app-sidebar .result-summary-value {
     max-width: 42px;
     overflow: hidden;
     font-size: 10px;
@@ -901,29 +912,29 @@ textarea {
     text-overflow: ellipsis;
   }
 
-  .result-rule-button {
+  .app-shell > .app-sidebar .result-rule-button {
     min-height: 24px;
     padding-inline: 2px;
   }
 
-  .result-rule-label {
+  .app-shell > .app-sidebar .result-rule-label {
     display: none;
   }
 
-  .sidebar-filter-transfer {
+  .app-shell > .app-sidebar .sidebar-filter-transfer {
     grid-template-columns: 1fr;
     gap: 5px;
     padding-top: 3px;
   }
 
-  .filter-transfer-button {
+  .app-shell > .app-sidebar .filter-transfer-button {
     width: 40px;
     min-height: 34px;
     padding: 0;
     font-size: 15px;
   }
 
-  .filter-transfer-label {
+  .app-shell > .app-sidebar .filter-transfer-label {
     display: none;
   }
 
@@ -932,7 +943,7 @@ textarea {
   }
 
   .course-workspace {
-    min-height: calc(100vh - 24px);
+    min-height: calc(100dvh - 24px);
   }
 
   .functional-drawer .ant-drawer-content-wrapper {
@@ -1015,5 +1026,145 @@ textarea {
 
   .exclusion-sync-actions {
     grid-template-columns: 1fr;
+  }
+
+  /* 关于对话框：窄屏下收窄宽度，矮屏下允许内容区滚动 */
+  .about-dialog .ant-modal {
+    max-width: calc(100vw - 24px);
+    margin: 12px auto;
+  }
+
+  .about-dialog .ant-modal-body {
+    max-height: calc(100dvh - 96px);
+    overflow-y: auto;
+  }
+
+  /* 移动端：隐藏桌面内嵌侧边栏，改用汉堡菜单 + 抽屉 */
+  .app-shell > .app-sidebar {
+    display: none;
+  }
+
+  .app-mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 48px;
+    padding: calc(6px + env(safe-area-inset-top)) 0 10px;
+  }
+
+  .app-mobile-menu-button.ant-btn {
+    width: 44px;
+    height: 44px;
+    margin-left: -8px;
+    color: #1d232b;
+    font-size: 20px;
+  }
+
+  .app-mobile-brand {
+    color: #1d232b;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .app-main {
+    padding: 0 12px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .course-workspace {
+    min-height: calc(100dvh - 78px);
+  }
+
+  /* 抽屉里的侧边栏保持完整布局并撑满抽屉 */
+  .app-sidebar-drawer-content {
+    height: 100%;
+  }
+
+  .app-sidebar-drawer .app-sidebar {
+    width: 100%;
+    flex-basis: auto;
+    min-width: 0;
+    height: 100%;
+    padding: 22px 18px calc(16px + env(safe-area-inset-bottom));
+    border-right: 0;
+  }
+
+  /* 触控目标不小于 44px */
+  .app-shell .nav-item,
+  .app-sidebar-drawer .nav-item {
+    min-height: 44px;
+  }
+
+  .app-shell .filter-transfer-button,
+  .app-sidebar-drawer .filter-transfer-button {
+    min-height: 44px;
+  }
+
+  /* 课程卡片列表 */
+  .course-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .course-card {
+    padding: 12px;
+    cursor: pointer;
+    background: #ffffff;
+    border: 1px solid #dfe3e8;
+    border-radius: 6px;
+  }
+
+  .course-card:active {
+    background: #fafafa;
+  }
+
+  .course-card-excluded {
+    background: #fdf9f9;
+    border-color: #e0b4b4;
+  }
+
+  .course-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .course-card-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .course-card-field {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .course-card-field > span {
+    color: #707986;
+    font-size: 12px;
+  }
+
+  .course-card-field > strong {
+    color: #1d232b;
+    font-size: 15px;
+  }
+
+  .course-card-field-switch {
+    align-items: flex-end;
+  }
+
+  .course-card-reason {
+    padding-top: 8px;
+    margin-top: 10px;
+    color: #8f2c3e;
+    font-size: 12px;
+    line-height: 1.5;
+    border-top: 1px dashed #e5c8cb;
   }
 }

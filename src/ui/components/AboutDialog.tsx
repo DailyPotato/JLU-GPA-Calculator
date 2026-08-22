@@ -1,5 +1,5 @@
 import { DeleteOutlined } from '@ant-design/icons';
-import { Button, Descriptions, Divider, Modal, Typography } from 'antd';
+import { Alert, Button, Descriptions, Divider, Modal, Typography } from 'antd';
 
 interface Props {
   open: boolean;
@@ -9,13 +9,26 @@ interface Props {
 
 export function AboutDialog({ open, onClose, onResetAll }: Props) {
   return (
-    <Modal open={open} title="关于 JLU GPA" footer={null} width={560} onCancel={onClose}>
+    <Modal
+      open={open}
+      title="关于 JLU GPA"
+      footer={null}
+      width={560}
+      className="about-dialog"
+      onCancel={onClose}
+    >
+      <Alert
+        type="info"
+        showIcon
+        className="about-privacy-alert"
+        message="本网站所有数据均在本地处理与缓存，不会收集您的信息。"
+      />
       <Typography.Paragraph>
         面向吉林大学本科生的本地优先绩点核算工具，成绩只在浏览器中处理，可计算保研
         GPA、加权平均分和算术平均分。
       </Typography.Paragraph>
       <Descriptions column={1} size="small" bordered>
-        <Descriptions.Item label="版本">正式版 v1.0.0</Descriptions.Item>
+        <Descriptions.Item label="版本">正式版 v1.0.1</Descriptions.Item>
         <Descriptions.Item label="项目地址">
           <Typography.Link
             href="https://github.com/DailyPotato/JLU-GPA-Calculator"

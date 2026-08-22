@@ -26,6 +26,7 @@ function Workbench() {
     courses,
     rules,
     ready,
+    firstVisit,
     hasCalculated,
     selectedResultKind,
     persistenceError,
@@ -36,6 +37,7 @@ function Workbench() {
     deleteCourse,
     clearCourses,
     resetAllData,
+    acknowledgeWelcome,
     importCourses,
     saveRules
   } = useAppState();
@@ -43,6 +45,7 @@ function Workbench() {
   const [importOpen, setImportOpen] = useState(false);
   const [exclusionKind, setExclusionKind] = useState<ResultKind>();
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course>();
   const [exporting, setExporting] = useState(false);
@@ -318,8 +321,14 @@ function Workbench() {
         onSave={saveCourse}
       />
       <AboutDialog
-        open={aboutOpen}
-        onClose={() => setAboutOpen(false)}
+        open={aboutOpen || (firstVisit && !welcomeDismissed)}
+        onClose={() => {
+          setAboutOpen(false);
+          if (firstVisit && !welcomeDismissed) {
+            setWelcomeDismissed(true);
+            void acknowledgeWelcome();
+          }
+        }}
         onResetAll={confirmResetAll}
       />
       <div className="export-host" aria-hidden="true">
