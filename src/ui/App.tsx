@@ -35,6 +35,7 @@ function Workbench() {
     saveCourse,
     deleteCourse,
     clearCourses,
+    resetAllData,
     importCourses,
     saveRules
   } = useAppState();
@@ -138,6 +139,33 @@ function Workbench() {
           app.message.success('课程和计算结果已清空');
         } catch (error) {
           app.message.error(error instanceof Error ? error.message : '清空课程失败');
+          throw error;
+        }
+      }
+    });
+  };
+
+  const confirmResetAll = () => {
+    app.modal.confirm({
+      title: '清空全部数据？',
+      content: `将删除当前保存的 ${courses.length} 门课程、全部排除规则与设置，并恢复为初始状态。此操作无法撤销。`,
+      okText: '确认清空',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await resetAllData();
+          setActivePanel(undefined);
+          setImportOpen(false);
+          setEditorOpen(false);
+          setEditingCourse(undefined);
+          setExclusionKind(undefined);
+          selectResultKind(undefined);
+          setWorkspaceVersion((version) => version + 1);
+          setAboutOpen(false);
+          app.message.success('已清空全部数据并恢复初始状态');
+        } catch (error) {
+          app.message.error(error instanceof Error ? error.message : '清空数据失败');
           throw error;
         }
       }
@@ -289,7 +317,11 @@ function Workbench() {
         }}
         onSave={saveCourse}
       />
-      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <AboutDialog
+        open={aboutOpen}
+        onClose={() => setAboutOpen(false)}
+        onResetAll={confirmResetAll}
+      />
       <div className="export-host" aria-hidden="true">
         <ResultExportCard
           ref={exportRef}

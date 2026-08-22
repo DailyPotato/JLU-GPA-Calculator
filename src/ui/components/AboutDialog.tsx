@@ -1,11 +1,13 @@
-import { Descriptions, Modal, Typography } from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
+import { Button, Descriptions, Divider, Modal, Typography } from 'antd';
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  onResetAll: () => void;
 }
 
-export function AboutDialog({ open, onClose }: Props) {
+export function AboutDialog({ open, onClose, onResetAll }: Props) {
   return (
     <Modal open={open} title="关于 JLU GPA" footer={null} width={560} onCancel={onClose}>
       <Typography.Paragraph>
@@ -29,6 +31,12 @@ export function AboutDialog({ open, onClose }: Props) {
           本项目基于 GPL v3.0 协议开源，仅供学习与个人使用，请勿用于商业用途。
         </Descriptions.Item>
       </Descriptions>
+      <Divider plain className="about-reset-divider">
+        数据管理
+      </Divider>
+      <Button danger block icon={<DeleteOutlined />} onClick={onResetAll}>
+        清空全部数据
+      </Button>
       <Typography.Paragraph type="secondary" className="about-disclaimer">
         普瑞赛斯正在看着你哦
       </Typography.Paragraph>
