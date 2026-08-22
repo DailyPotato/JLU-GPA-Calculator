@@ -21,6 +21,7 @@ type Action =
   | { type: 'HYDRATE'; courses: Course[]; rules: AppRuleSet }
   | { type: 'SET_COURSES'; courses: Course[] }
   | { type: 'CLEAR_COURSES' }
+  | { type: 'RESET' }
   | { type: 'SET_RULES'; rules: AppRuleSet }
   | { type: 'CALCULATE' }
   | { type: 'SELECT_RESULT'; kind?: ResultKind }
@@ -36,6 +37,14 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         courses: [],
+        hasCalculated: false,
+        selectedResultKind: undefined
+      };
+    case 'RESET':
+      return {
+        courses: [],
+        rules: structuredClone(defaultRuleSet),
+        ready: true,
         hasCalculated: false,
         selectedResultKind: undefined
       };
@@ -63,6 +72,7 @@ interface AppContextValue extends AppState {
   saveCourse: (course: Course) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
   clearCourses: () => Promise<void>;
+  resetAllData: () => Promise<void>;
   importCourses: (incoming: Course[], mode: ImportMergeMode) => Promise<MergeResult>;
   saveRules: (rules: AppRuleSet) => Promise<void>;
 }
@@ -148,6 +158,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [withPersistenceError]
   );
 
+  const resetAllData = useCallback(
+    async () =>
+      withPersistenceError(async () => {
+        await database.clearAllData();
+        dispatch({ type: 'RESET' });
+      }),
+    [withPersistenceError]
+  );
+
   const importCourses = useCallback(
     async (incoming: Course[], mode: ImportMergeMode) =>
       withPersistenceError(async () => {
@@ -183,10 +202,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       saveCourse,
       deleteCourse,
       clearCourses,
+      resetAllData,
       importCourses,
       saveRules
     }),
-    [state, results, saveCourse, deleteCourse, clearCourses, importCourses, saveRules]
+    [state, results, saveCourse, deleteCourse, clearCourses, resetAllData, importCourses, saveRules]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

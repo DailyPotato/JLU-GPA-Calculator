@@ -46,6 +46,12 @@ export class JluGpaDatabase extends Dexie {
     await this.courses.clear();
   }
 
+  async clearAllData(): Promise<void> {
+    await this.transaction('rw', this.courses, this.ruleSets, this.settings, async () => {
+      await Promise.all([this.courses.clear(), this.ruleSets.clear(), this.settings.clear()]);
+    });
+  }
+
   async loadCourses(): Promise<Course[]> {
     return this.courses.toArray();
   }
