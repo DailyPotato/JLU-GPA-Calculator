@@ -1,15 +1,31 @@
 import { DeleteOutlined, EditOutlined, MoreOutlined } from '@ant-design/icons';
 import { App, Button, Dropdown, Switch, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import type { Course, CourseEvaluation } from '../../domain/course/course.types';
-import { getEffectiveScore, resolveGradePoint } from '../../domain/course/course.normalizer';
+import { useEffect, useState } from 'react';
+import type { Course } from '../../domain/course/course.types';
 import { formatDecimal } from '../../domain/calculation/format-result';
 import type { AppRuleSet } from '../../domain/rules/rule-set.types';
+import { CourseCardList } from './CourseCardList';
+import {
+  gradePointText,
+  gradeText,
+  recommendationValue,
+  type CourseLedgerRow
+} from './course-ledger-utils';
 
-export interface CourseLedgerRow {
-  course: Course;
-  evaluation?: CourseEvaluation;
-  recommendationEvaluation?: CourseEvaluation;
+export type { CourseLedgerRow } from './course-ledger-utils';
+
+const mobileQuery = '(max-width: 640px)';
+
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia(mobileQuery).matches);
+  useEffect(() => {
+    const media = window.matchMedia(mobileQuery);
+    const onChange = (event: MediaQueryListEvent) => setIsMobile(event.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+  return isMobile;
 }
 
 interface Props {
@@ -21,27 +37,6 @@ interface Props {
   onRecommendationChange: (course: Course, included: boolean) => Promise<void>;
 }
 
-function gradeText(course: Course): string {
-  const grade = course.achievement.grade;
-  return grade.kind === 'percentage' ? formatDecimal(grade.raw, 1) : grade.raw;
-}
-
-function gradePointText(course: Course, rules: AppRuleSet): string {
-  try {
-    const score = getEffectiveScore(course.achievement.grade, rules.gradePoint);
-    return formatDecimal(resolveGradePoint(course, score, rules.gradePoint).value, 1);
-  } catch {
-    return '—';
-  }
-}
-
-function recommendationValue(row: CourseLedgerRow): boolean {
-  const override = row.course.control.recommendationOverride;
-  if (override === 'include') return true;
-  if (override === 'exclude') return false;
-  return row.recommendationEvaluation?.included ?? true;
-}
-
 export function CourseLedger({
   rows,
   rules,
@@ -51,6 +46,7 @@ export function CourseLedger({
   onRecommendationChange
 }: Props) {
   const app = App.useApp();
+  const isMobile = useIsMobile();
 
   const confirmDelete = (course: Course) => {
     app.modal.confirm({
@@ -157,6 +153,18 @@ export function CourseLedger({
       )
     }
   ];
+
+  if (isMobile && !loading) {
+    return (
+      <CourseCardList
+        rows={rows}
+        rules={rules}
+        onEdit={onEdit}
+        onRequestDelete={confirmDelete}
+        onRecommendationChange={onRecommendationChange}
+      />
+    );
+  }
 
   return (
     <div className="course-ledger" data-testid="course-ledger">
