@@ -1028,6 +1028,17 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  /* 关于对话框：窄屏下收窄宽度，矮屏下允许内容区滚动 */
+  .about-dialog .ant-modal {
+    max-width: calc(100vw - 24px);
+    margin: 12px auto;
+  }
+
+  .about-dialog .ant-modal-body {
+    max-height: calc(100dvh - 96px);
+    overflow-y: auto;
+  }
+
   /* 移动端：隐藏桌面内嵌侧边栏，改用汉堡菜单 + 抽屉 */
   .app-shell > .app-sidebar {
     display: none;

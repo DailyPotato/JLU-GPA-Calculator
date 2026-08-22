@@ -9,7 +9,14 @@ interface Props {
 
 export function AboutDialog({ open, onClose, onResetAll }: Props) {
   return (
-    <Modal open={open} title="关于 JLU GPA" footer={null} width={560} onCancel={onClose}>
+    <Modal
+      open={open}
+      title="关于 JLU GPA"
+      footer={null}
+      width={560}
+      className="about-dialog"
+      onCancel={onClose}
+    >
       <Alert
         type="info"
         showIcon
